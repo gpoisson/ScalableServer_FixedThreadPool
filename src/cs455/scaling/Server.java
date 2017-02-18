@@ -4,8 +4,11 @@ public class Server implements Node {
 	
 	private int serverPort;
 	private int threadPoolSize;
+	private Thread serverListener;
 	
 	private Server() {
+		
+		serverListener = new Thread(new ServerListener(serverPort, debug));
 		
 	}
 	
@@ -23,7 +26,9 @@ public class Server implements Node {
 			System.exit(0);
 		}
 		
-		System.out.println("New server started.\tPort: " + server.serverPort + "\tThread Pool Size: " + server.threadPoolSize);
+		System.out.println("New server initialized.\tPort: " + server.serverPort + "\tThread Pool Size: " + server.threadPoolSize);
+		
+		server.serverListener.start();
 		
 	}
 	
