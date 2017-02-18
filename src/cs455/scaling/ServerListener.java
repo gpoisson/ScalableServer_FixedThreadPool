@@ -1,6 +1,7 @@
 package cs455.scaling;
 
 import java.io.IOException;
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
@@ -27,7 +28,7 @@ public class ServerListener implements Runnable {
 			serverSocketChannel = ServerSocketChannel.open();
 			serverSocketChannel.socket().bind(new InetSocketAddress(serverPort));
 			serverSocketChannel.configureBlocking(false);
-			if (debug) System.out.println(" Server socket channel opened.");
+			if (debug) System.out.println(" Server socket channel opened.\n\tAddress: " + serverSocketChannel.socket().getInetAddress() + "\n\tPort: " + serverSocketChannel.socket().getLocalPort());
 		} catch (IOException e) {
 			System.out.println(e);
 		}
@@ -36,6 +37,8 @@ public class ServerListener implements Runnable {
 		while (!shutDown) {
 			try {
 				SocketChannel socketChannel = serverSocketChannel.accept();
+				
+				
 				
 				if (socketChannel != null) {
 					if (debug) System.out.println(" New connection detected. Socket channel created.");

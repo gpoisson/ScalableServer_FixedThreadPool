@@ -1,8 +1,8 @@
 package cs455.scaling;
 
 public class Server implements Node {
-	
-	private int serverPort;
+
+	public int serverPort;
 	private int threadPoolSize;
 	private Thread serverListener;
 	
