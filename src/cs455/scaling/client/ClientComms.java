@@ -9,11 +9,12 @@ public class ClientComms implements Runnable {
 	
 	private String host;
 	private int portNum;
+	private int messageRate;
 	private SocketChannel socketChannel;
 	private boolean shutDown = false;
 	private boolean debug;
 	
-	public ClientComms(String host, int portNum, boolean debug) {
+	public ClientComms(String host, int portNum, int messageRate, boolean debug) {
 		this.host = host;
 		this.portNum = portNum;
 		this.debug = debug;
@@ -46,8 +47,17 @@ public class ClientComms implements Runnable {
 	public void run() {
 		if (debug) System.out.println(" Client communications initializing...");
 		connectToServer();
+		
+		//Thread msgEngine = new Thread(new MessageEngine(socketChannel, messageRate, debug));
+		//msgEngine.start();
+		MessageEngine msgEngine = new MessageEngine(socketChannel, messageRate, debug);
 		while (!shutDown) {
-			
+			try {
+				msgEngine.wait(messageRate);
+			} catch (InterruptedException e) {
+				System.out.println(e);
+			}
+			if (debug) System.out.println("  Message engine woken up. Sending a new message...");
 		}
 		disconnectFromServer();
 	}
