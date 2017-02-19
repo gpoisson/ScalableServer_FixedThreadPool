@@ -1,8 +1,8 @@
-package cs455.scaling;
+package cs455.scaling.client;
 
 import java.util.LinkedList;
 
-import cs455.communications.ClientComms;
+import cs455.scaling.Node;
 import cs455.util.HashComputer;
 
 public class Client implements Node {

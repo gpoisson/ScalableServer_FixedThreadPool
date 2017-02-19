@@ -1,4 +1,6 @@
-package cs455.scaling;
+package cs455.scaling.server;
+
+import cs455.scaling.Node;
 
 public class Server implements Node {
 

@@ -1,4 +1,6 @@
-package cs455.scaling;
+package cs455.scaling.server;
+
+import cs455.scaling.WorkerThread;
 
 public class ThreadPoolManager implements Runnable {
 	
