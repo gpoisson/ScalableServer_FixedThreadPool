@@ -26,7 +26,7 @@ public class Server implements Node {
 		
 		System.out.println("New server initialized.\tPort: " + server.serverPort + "\tThread Pool Size: " + server.threadPoolSize);
 		
-		server.tpManager = new Thread(new ThreadPoolManager(server.threadPoolSize, server.debug));
+		server.tpManager = new Thread(new ThreadPoolManager(server.threadPoolSize, debug));
 		server.tpManager.start();
 	}
 	

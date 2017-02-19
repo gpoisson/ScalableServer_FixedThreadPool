@@ -2,6 +2,7 @@ package cs455.scaling;
 
 import java.util.LinkedList;
 
+import cs455.communications.ClientComms;
 import cs455.util.HashComputer;
 
 public class Client implements Node {
@@ -37,7 +38,7 @@ public class Client implements Node {
 		
 		System.out.println("New client initialized.  Server host: " + client.serverHost + " \tServer Port: " + client.serverPort + "\tMessageRate: " + client.messageRate);
 	
-		client.comm = new Thread(new ClientComms(client.serverHost, client.serverPort, client.debug));
+		client.comm = new Thread(new ClientComms(client.serverHost, client.serverPort, debug));
 		client.comm.start();
 	}
 	

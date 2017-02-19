@@ -1,4 +1,4 @@
-package cs455.scaling;
+package cs455.communications;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
