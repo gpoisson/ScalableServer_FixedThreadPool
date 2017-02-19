@@ -2,6 +2,7 @@ package cs455.scaling;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.net.SocketAddress;
 import java.nio.channels.SocketChannel;
 
 public class ClientComms implements Runnable {
@@ -21,8 +22,9 @@ public class ClientComms implements Runnable {
 	public synchronized void connectToServer() {
 		if (debug) System.out.println(" Client connecting to server...");
 		try {
-			socketChannel = SocketChannel.open();
-			socketChannel.connect(new InetSocketAddress(host, portNum));
+			SocketAddress address = new InetSocketAddress(host, portNum);
+			socketChannel = SocketChannel.open(address);
+			//socketChannel.connect();
 			if (debug) System.out.println(" Client connected to server successfully.");
 		} catch (IOException e) {
 			System.out.println(e);

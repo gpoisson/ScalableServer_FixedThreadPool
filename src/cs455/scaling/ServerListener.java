@@ -3,6 +3,7 @@ package cs455.scaling;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
+import java.net.SocketAddress;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 
@@ -25,9 +26,10 @@ public class ServerListener implements Runnable {
 		
 		// Open a Server Socket channel
 		try {
+			SocketAddress port = new InetSocketAddress(serverPort);
 			serverSocketChannel = ServerSocketChannel.open();
 			serverSocketChannel.socket().bind(new InetSocketAddress(serverPort));
-			serverSocketChannel.configureBlocking(false);
+			//serverSocketChannel.configureBlocking(false);
 			if (debug) System.out.println(" Server socket channel opened.\n\tAddress: " + serverSocketChannel.socket().getInetAddress() + "\n\tPort: " + serverSocketChannel.socket().getLocalPort());
 		} catch (IOException e) {
 			System.out.println(e);

@@ -4,12 +4,10 @@ public class Server implements Node {
 
 	public int serverPort;
 	private int threadPoolSize;
-	private Thread serverListener;
+	private ThreadPoolManager tpManager;
 	
 	private Server() {
-		
-		serverListener = new Thread(new ServerListener(serverPort, debug));
-		
+
 	}
 	
 	public static void main(String[] args) {
@@ -28,8 +26,9 @@ public class Server implements Node {
 		
 		System.out.println("New server initialized.\tPort: " + server.serverPort + "\tThread Pool Size: " + server.threadPoolSize);
 		
-		server.serverListener.start();
-		
+		server.tpManager = new ThreadPoolManager(server.threadPoolSize, server.debug);
+		server.tpManager.populateThreadPool();
+		server.tpManager.startThreadPool();
 	}
 	
 	private static String usage() {
