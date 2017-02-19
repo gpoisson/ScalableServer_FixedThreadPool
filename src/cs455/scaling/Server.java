@@ -4,7 +4,7 @@ public class Server implements Node {
 
 	public int serverPort;
 	private int threadPoolSize;
-	private ThreadPoolManager tpManager;
+	private Thread tpManager;
 	
 	private Server() {
 
@@ -26,9 +26,8 @@ public class Server implements Node {
 		
 		System.out.println("New server initialized.\tPort: " + server.serverPort + "\tThread Pool Size: " + server.threadPoolSize);
 		
-		server.tpManager = new ThreadPoolManager(server.threadPoolSize, server.debug);
-		server.tpManager.populateThreadPool();
-		server.tpManager.startThreadPool();
+		server.tpManager = new Thread(new ThreadPoolManager(server.threadPoolSize, server.debug));
+		server.tpManager.start();
 	}
 	
 	private static String usage() {
