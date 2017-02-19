@@ -1,15 +1,23 @@
 package cs455.scaling;
 
+import java.util.LinkedList;
+
+import cs455.util.HashComputer;
+
 public class Client implements Node {
 
 	private String serverHost;
 	private int serverPort;
 	private int messageRate;
 	
+	private HashComputer hashComputer;
+	private LinkedList<String> hashCodes;
+	
 	private Thread comm;
 	
 	public Client () {
-		
+		hashComputer = new HashComputer();
+		hashCodes = new LinkedList<String>();
 	}
 	
 	public static void main(String[] args) {
