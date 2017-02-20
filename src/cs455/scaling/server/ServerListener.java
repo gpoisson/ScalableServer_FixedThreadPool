@@ -1,9 +1,7 @@
 package cs455.scaling.server;
 
 import java.io.IOException;
-import java.net.InetAddress;
 import java.net.InetSocketAddress;
-import java.net.SocketAddress;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 
@@ -26,7 +24,6 @@ public class ServerListener implements Runnable {
 		
 		// Open a Server Socket channel
 		try {
-			SocketAddress port = new InetSocketAddress(serverPort);
 			serverSocketChannel = ServerSocketChannel.open();
 			serverSocketChannel.socket().bind(new InetSocketAddress(serverPort));
 			//serverSocketChannel.configureBlocking(false);

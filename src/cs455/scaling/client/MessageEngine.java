@@ -1,6 +1,5 @@
 package cs455.scaling.client;
 
-import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
 
 import cs455.message.HashMessage;
