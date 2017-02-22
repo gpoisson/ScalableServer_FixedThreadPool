@@ -3,12 +3,13 @@ package cs455.scaling;
 import java.nio.channels.ServerSocketChannel;
 import java.util.LinkedList;
 
+import cs455.scaling.server.IdleWorkerReporter;
 import cs455.scaling.server.tasks.Task;
 
 public class WorkerThread implements Runnable {
 
 	private final int workerThreadID;
-	LinkedList<WorkerThread> idleThreads;
+	private final IdleWorkerReporter idleWorkerReporter;
 	private Task currentTask;
 	private boolean debug;
 	private boolean shutDown;
@@ -16,10 +17,10 @@ public class WorkerThread implements Runnable {
 	
 	private ServerSocketChannel ssChannel;
 	
-	public WorkerThread(LinkedList<WorkerThread> idleThreads, int id, boolean debug) {
+	public WorkerThread(IdleWorkerReporter idleWorkerReporter, int id, boolean debug) {
 		this.debug = debug; 
 		this.workerThreadID = id;
-		this.idleThreads = idleThreads;
+		this.idleWorkerReporter = idleWorkerReporter;
 		this.shutDown = false;
 		this.currentTask = null;
 	}
@@ -41,7 +42,7 @@ public class WorkerThread implements Runnable {
 	private synchronized void reportIdle() {
 		if (debug) System.out.println("  Worker thread " + workerThreadID + " reporting itself idle to the thread pool manager.");
 		idle = true;
-		idleThreads.add(this);
+
 	}
 	
 	public synchronized void assignTask(Task newTask) {

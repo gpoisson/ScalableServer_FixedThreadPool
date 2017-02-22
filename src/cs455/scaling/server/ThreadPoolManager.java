@@ -10,6 +10,7 @@ public class ThreadPoolManager implements Runnable {
 	private final Thread[] threadPool;
 	private LinkedList<Task> taskQueue;
 	private LinkedList<WorkerThread> idleThreads;
+	private IdleWorkerReporter idleWorkerReporter;
 	private final boolean debug;
 	private boolean shutDown;
 	
@@ -21,13 +22,14 @@ public class ThreadPoolManager implements Runnable {
 		threadPool = new Thread[threadPoolSize];
 		taskQueue = new LinkedList<Task>();
 		idleThreads = new LinkedList<WorkerThread>();
+		idleWorkerReporter = new IdleWorkerReporter();
 	}
 	
 	// Populates the thread pool with task objects
 	private synchronized void populateThreadPool() {
 		if (debug) System.out.println(" Populating thread pool with " + threadPool.length + " threads.");
 		for (int id = 0; id < threadPool.length; id++) {
-			threadPool[id] = new Thread(new WorkerThread(idleThreads, id, debug));
+			threadPool[id] = new Thread(new WorkerThread(idleWorkerReporter, id, debug));
 		}
 	}
 	
