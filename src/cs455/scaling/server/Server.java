@@ -28,6 +28,8 @@ public class Server implements Node {
 		
 		System.out.println("New server initialized.\tPort: " + server.serverPort + "\tThread Pool Size: " + server.threadPoolSize);
 		
+		Thread sl = new Thread(new ServerListener(server.serverPort, debug));
+		sl.start();
 		server.tpManager = new Thread(new ThreadPoolManager(server.threadPoolSize, debug));
 		server.tpManager.start();
 	}
