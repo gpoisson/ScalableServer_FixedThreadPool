@@ -7,10 +7,10 @@ import cs455.scaling.server.tasks.Task;
 
 public class ThreadPoolManager implements Runnable {
 	
-	private Thread[] threadPool;
+	private final Thread[] threadPool;
 	private LinkedList<Task> taskQueue;
 	private LinkedList<WorkerThread> idleThreads;
-	private boolean debug;
+	private final boolean debug;
 	private boolean shutDown;
 	
 	// ThreadPoolManager runs on its own thread. It builds and manages

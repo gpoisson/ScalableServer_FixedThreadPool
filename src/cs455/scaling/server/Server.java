@@ -4,33 +4,30 @@ import cs455.scaling.Node;
 
 public class Server implements Node {
 
-	public int serverPort;
-	private int threadPoolSize;
-	private Thread tpManager;
+	private final int serverPort;
+	private final int threadPoolSize;
+	private final Thread tpManager;
 	
-	private Server() {
-
+	private Server(int serverPort, int threadPoolSize) {
+		this.serverPort = serverPort;
+		this.threadPoolSize = threadPoolSize;
+		this.tpManager = new Thread(new ThreadPoolManager(this.threadPoolSize, debug));
 	}
 	
 	public static void main(String[] args) {
 		
-		Server server = new Server();
-		
-		// Parse command arguments
-		if (args.length > 1) {
-			server.serverPort = Integer.parseInt(args[0]);
-			server.threadPoolSize = Integer.parseInt(args[1]);
-		}
-		else {
-			System.out.println(usage());
+		// Check arguments
+		if (args.length < 2) {
+			usage();
 			System.exit(0);
 		}
 		
+		Server server = new Server(Integer.parseInt(args[0]), Integer.parseInt(args[1]));
+		
 		System.out.println("New server initialized.\tPort: " + server.serverPort + "\tThread Pool Size: " + server.threadPoolSize);
 		
-		Thread sl = new Thread(new ServerListener(server.serverPort, debug));
-		sl.start();
-		server.tpManager = new Thread(new ThreadPoolManager(server.threadPoolSize, debug));
+		Thread serverListener = new Thread(new ServerListener(server.serverPort, debug));
+		serverListener.start();
 		server.tpManager.start();
 	}
 	

@@ -8,15 +8,13 @@ import java.nio.channels.SocketChannel;
 public class ServerListener implements Runnable {
 
 	private ServerSocketChannel serverSocketChannel;
-	private int serverPort;
+	private final int serverPort;
 	private boolean shutDown = false;
-	private boolean debug;
+	private final boolean debug;
 	
 	public ServerListener(int serverPort, boolean debug) {
-		
 		this.serverPort = serverPort;
 		this.debug = debug;
-		
 	}
 	
 	@Override
@@ -36,8 +34,6 @@ public class ServerListener implements Runnable {
 		while (!shutDown) {
 			try {
 				SocketChannel socketChannel = serverSocketChannel.accept();
-				
-				
 				
 				if (socketChannel != null) {
 					if (debug) System.out.println(" New connection detected. Socket channel created.");

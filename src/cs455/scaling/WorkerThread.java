@@ -21,6 +21,7 @@ public class WorkerThread implements Runnable {
 		this.workerThreadID = id;
 		this.idleThreads = idleThreads;
 		this.shutDown = false;
+		this.currentTask = null;
 	}
 	
 	@Override
@@ -37,12 +38,17 @@ public class WorkerThread implements Runnable {
 	}
 	
 	// Allows the thread pool manager to monitor for idle worker threads
-	private void reportIdle() {
-		if (idle) idleThreads.add(this);
+	private synchronized void reportIdle() {
+		if (debug) System.out.println("  Worker thread " + workerThreadID + " reporting itself idle to the thread pool manager.");
+		idle = true;
+		idleThreads.add(this);
 	}
 	
 	public synchronized void assignTask(Task newTask) {
-		currentTask = newTask;
+		if (newTask != null) {
+			idle = false;
+			currentTask = newTask;
+		}
 	}
 
 }
