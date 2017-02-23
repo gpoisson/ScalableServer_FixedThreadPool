@@ -42,7 +42,6 @@ public class WorkerThread implements Runnable {
 	private synchronized void reportIdle() {
 		if (debug) System.out.println("  Worker thread " + workerThreadID + " reporting itself idle to the thread pool manager.");
 		idle = true;
-
 	}
 	
 	public synchronized void assignTask(Task newTask) {

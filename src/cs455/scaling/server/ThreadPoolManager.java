@@ -8,9 +8,9 @@ import cs455.scaling.server.tasks.Task;
 public class ThreadPoolManager implements Runnable {
 	
 	private final Thread[] threadPool;
-	private LinkedList<Task> taskQueue;
-	private LinkedList<WorkerThread> idleThreads;
-	private IdleWorkerReporter idleWorkerReporter;
+	private final LinkedList<Task> taskQueue;
+	private final LinkedList<WorkerThread> idleThreads;
+	private final IdleWorkerReporter idleWorkerReporter;
 	private final boolean debug;
 	private boolean shutDown;
 	
@@ -22,7 +22,7 @@ public class ThreadPoolManager implements Runnable {
 		threadPool = new Thread[threadPoolSize];
 		taskQueue = new LinkedList<Task>();
 		idleThreads = new LinkedList<WorkerThread>();
-		idleWorkerReporter = new IdleWorkerReporter();
+		idleWorkerReporter = new IdleWorkerReporter(idleThreads);
 	}
 	
 	// Populates the thread pool with task objects
@@ -40,6 +40,15 @@ public class ThreadPoolManager implements Runnable {
 			threadPool[id].start();
 		}
 	}
+	
+	private synchronized WorkerThread retrieveIdleThread() {
+		if (idleThreads.size() > 0) {
+			WorkerThread idleThread = idleThreads.removeFirst();
+			if (debug) System.out.println(" Idle thread retrieved.");
+			return idleThread;
+		}
+		return null;
+	}
 
 	@Override
 	public void run() {
@@ -48,8 +57,9 @@ public class ThreadPoolManager implements Runnable {
 		if (debug) System.out.println(" Thread pool manager now monitoring for idle worker threads and pending tasks...");
 		while (!shutDown) {
 			if ((idleThreads.size() > 0) && (taskQueue.size() > 0)) {
-				if (debug) System.out.println(" Idle thread and pending task detected. Assigning pending task to idle thread.");
-				idleThreads.removeFirst().assignTask(taskQueue.removeFirst());
+				WorkerThread idleThread = retrieveIdleThread();
+				if (debug) System.out.println(" Matching retrieved idle thread with a pending task.");
+				idleThread.assignTask(taskQueue.removeFirst());
 			}
 		}
 	}
