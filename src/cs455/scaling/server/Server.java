@@ -39,6 +39,10 @@ public class Server implements Node {
 		 *    the selector and set OP_READ, since we assume there will be data coming from the client
 		 * 5. After the write is complete, set the interest back to OP_READ
 		 * 6. Be careful using BYTE BUFFER - any operations (read/get/put) advances the pointer
+		 *      Use rewind() before writing to channel -- resets pointer to 0 so that all data is written
+		 *      Use clear() before reading from channel -- empties the current BYTE BUFFER to make room for new data
+		 *      
+		 * 
 		 */
 		Thread serverListener = new Thread(new ServerListener(server.serverPort, debug));
 		serverListener.start();
