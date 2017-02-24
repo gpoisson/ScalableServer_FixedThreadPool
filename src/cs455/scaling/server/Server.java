@@ -26,6 +26,20 @@ public class Server implements Node {
 		
 		System.out.println("New server initialized.\tPort: " + server.serverPort + "\tThread Pool Size: " + server.threadPoolSize);
 		
+		
+		/*
+		 * TA RECOMMENDS MAKING SERVER LISTENER AN OBJECT IN THE MAIN THREAD,
+		 * NOT SURE IF IT'S TOTALLY NECESSARY 
+		 * 
+		 * OTHER TIPS:
+		 * 1. OP_ACCEPT is needed in server listener to accept conections
+		 * 2. Channels are writable until their send buffers (not BYTE BUFFER) are full (even if key is not set with OP_WRITE)
+		 * 3. Set OP_WRITE - key.isWritable() = true in next iteration
+		 * 4. Immediately after accepting connection and creating a new socket channel, register it with
+		 *    the selector and set OP_READ, since we assume there will be data coming from the client
+		 * 5. After the write is complete, set the interest back to OP_READ
+		 * 6. Be careful using BYTE BUFFER - any operations (read/get/put) advances the pointer
+		 */
 		Thread serverListener = new Thread(new ServerListener(server.serverPort, debug));
 		serverListener.start();
 		server.tpManager.start();
