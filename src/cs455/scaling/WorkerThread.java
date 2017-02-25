@@ -3,24 +3,22 @@ package cs455.scaling;
 import java.nio.channels.ServerSocketChannel;
 import java.util.LinkedList;
 
-import cs455.scaling.server.IdleWorkerReporter;
 import cs455.scaling.server.tasks.Task;
 
 public class WorkerThread implements Runnable {
 
 	private final int workerThreadID;
 	private Task currentTask;
-	private IdleWorkerReporter idleWorkerReporter;
+	private LinkedList<WorkerThread> idleThreads;
 	private boolean debug;
 	private boolean shutDown;
 	private boolean idle;
 	
 	private ServerSocketChannel ssChannel;
 	
-	public WorkerThread(IdleWorkerReporter idleWorkerReporter, int id, boolean debug) {
+	public WorkerThread(LinkedList<WorkerThread> idleThreads, int id, boolean debug) {
 		this.debug = debug; 
 		this.workerThreadID = id;
-		this.idleWorkerReporter = idleWorkerReporter;
 		this.shutDown = false;
 		this.currentTask = null;
 	}
@@ -40,8 +38,13 @@ public class WorkerThread implements Runnable {
 	
 	// Allows the thread pool manager to monitor for idle worker threads
 	private void reportIdle() {
-		if (debug && this.workerThreadID == 0) System.out.println("  Worker thread " + workerThreadID + " reporting itself idle to the thread pool manager.");
-		idle = true;
+		synchronized(idleThreads){
+			if (!idle) {
+				if (debug) System.out.println("  Worker thread " + workerThreadID + " reporting itself idle to the thread pool manager.");
+				idle = true;
+				idleThreads.add(this);
+			}
+		}
 	}
 	
 	public boolean isIdle() {
@@ -59,14 +62,4 @@ public class WorkerThread implements Runnable {
 			currentTask = newTask;
 		}
 	}
-	
-	public synchronized void suspend() {
-		try {
-			this.wait();
-		} catch (InterruptedException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-	}
-
 }

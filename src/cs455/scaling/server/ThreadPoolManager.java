@@ -11,7 +11,6 @@ public class ThreadPoolManager implements Runnable {
 	private final Thread[] threadPool;
 	private final LinkedList<Task> taskQueue;
 	private final LinkedList<WorkerThread> idleThreads;
-	private final IdleWorkerReporter idleWorkerReporter;
 	private final boolean debug;
 	private boolean shutDown;
 	
@@ -24,14 +23,14 @@ public class ThreadPoolManager implements Runnable {
 		threadPool = new Thread[threadPoolSize];
 		taskQueue = new LinkedList<Task>();
 		idleThreads = new LinkedList<WorkerThread>();
-		idleWorkerReporter = new IdleWorkerReporter();
+		if (debug) System.out.println(" Thread pool constructed");
 	}
 	
 	// Populates the thread pool with task objects
 	private synchronized void populateThreadPool() {
 		if (debug) System.out.println(" Populating thread pool with " + threadPool.length + " threads.");
 		for (int id = 0; id < threadPool.length; id++) {
-			workerThreads[id] = new WorkerThread(idleWorkerReporter, id, debug);
+			workerThreads[id] = new WorkerThread(idleThreads, id, debug);
 			threadPool[id] = new Thread(workerThreads[id]);
 		}
 	}
@@ -67,19 +66,6 @@ public class ThreadPoolManager implements Runnable {
 		// Begin monitoring for idle threads
 		if (debug) System.out.println(" Thread pool manager now monitoring for idle worker threads and pending tasks...");
 		while (!shutDown) {
-			for (WorkerThread wt: workerThreads) {
-				if (debug) System.out.println(" Thread pool checking status of worker thread " + wt.getId() + "...");
-				if (wt.isIdle()) {
-					synchronized (threadPool[wt.getId()]) {
-						try {
-							if (debug) System.out.println("   Suspending idle worker thread " + wt.getId() + "...");
-							wt.suspend();
-						} finally {
-							if (debug) System.out.println("   Worker thread suspended.");
-						}
-					}
-				}
-			}
 			if ((idleThreads.size() > 0) && (taskQueue.size() > 0)) {
 				WorkerThread idleThread = retrieveIdleThread();
 				if (debug) System.out.println(" Matching retrieved idle thread with a pending task.");
