@@ -9,8 +9,8 @@ import cs455.scaling.server.tasks.Task;
 public class WorkerThread implements Runnable {
 
 	private final int workerThreadID;
-	private final IdleWorkerReporter idleWorkerReporter;
 	private Task currentTask;
+	private IdleWorkerReporter idleWorkerReporter;
 	private boolean debug;
 	private boolean shutDown;
 	private boolean idle;
@@ -39,15 +39,33 @@ public class WorkerThread implements Runnable {
 	}
 	
 	// Allows the thread pool manager to monitor for idle worker threads
-	private synchronized void reportIdle() {
-		if (debug) System.out.println("  Worker thread " + workerThreadID + " reporting itself idle to the thread pool manager.");
+	private void reportIdle() {
+		if (debug && this.workerThreadID == 0) System.out.println("  Worker thread " + workerThreadID + " reporting itself idle to the thread pool manager.");
 		idle = true;
+	}
+	
+	public boolean isIdle() {
+		if (idle) return true;
+		else return false;
+	}
+	
+	public int getId() {
+		return this.workerThreadID;
 	}
 	
 	public synchronized void assignTask(Task newTask) {
 		if (newTask != null) {
 			idle = false;
 			currentTask = newTask;
+		}
+	}
+	
+	public synchronized void suspend() {
+		try {
+			this.wait();
+		} catch (InterruptedException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
 		}
 	}
 

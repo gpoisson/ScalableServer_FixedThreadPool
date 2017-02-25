@@ -7,6 +7,7 @@ import cs455.scaling.server.tasks.Task;
 
 public class ThreadPoolManager implements Runnable {
 	
+	private final WorkerThread[] workerThreads;
 	private final Thread[] threadPool;
 	private final LinkedList<Task> taskQueue;
 	private final LinkedList<WorkerThread> idleThreads;
@@ -19,17 +20,19 @@ public class ThreadPoolManager implements Runnable {
 	public ThreadPoolManager(int threadPoolSize, boolean debug) {
 		this.debug = debug;
 		this.shutDown = false;
+		workerThreads = new WorkerThread[threadPoolSize];
 		threadPool = new Thread[threadPoolSize];
 		taskQueue = new LinkedList<Task>();
 		idleThreads = new LinkedList<WorkerThread>();
-		idleWorkerReporter = new IdleWorkerReporter(idleThreads);
+		idleWorkerReporter = new IdleWorkerReporter();
 	}
 	
 	// Populates the thread pool with task objects
 	private synchronized void populateThreadPool() {
 		if (debug) System.out.println(" Populating thread pool with " + threadPool.length + " threads.");
 		for (int id = 0; id < threadPool.length; id++) {
-			threadPool[id] = new Thread(new WorkerThread(idleWorkerReporter, id, debug));
+			workerThreads[id] = new WorkerThread(idleWorkerReporter, id, debug);
+			threadPool[id] = new Thread(workerThreads[id]);
 		}
 	}
 	
@@ -41,6 +44,7 @@ public class ThreadPoolManager implements Runnable {
 		}
 	}
 	
+	// Retrieves the worker thread which has been idle the longest from the queue
 	private WorkerThread retrieveIdleThread() {
 		if (idleThreads.size() > 0) {
 			synchronized (idleThreads) {
@@ -54,14 +58,33 @@ public class ThreadPoolManager implements Runnable {
 
 	@Override
 	public void run() {
+		// Populate thread pool with worker threads
 		populateThreadPool();
+		
+		// Execute the worker threads
 		startThreadPool();
+		
+		// Begin monitoring for idle threads
 		if (debug) System.out.println(" Thread pool manager now monitoring for idle worker threads and pending tasks...");
 		while (!shutDown) {
+			for (WorkerThread wt: workerThreads) {
+				if (debug) System.out.println(" Thread pool checking status of worker thread " + wt.getId() + "...");
+				if (wt.isIdle()) {
+					synchronized (threadPool[wt.getId()]) {
+						try {
+							if (debug) System.out.println("   Suspending idle worker thread " + wt.getId() + "...");
+							wt.suspend();
+						} finally {
+							if (debug) System.out.println("   Worker thread suspended.");
+						}
+					}
+				}
+			}
 			if ((idleThreads.size() > 0) && (taskQueue.size() > 0)) {
 				WorkerThread idleThread = retrieveIdleThread();
 				if (debug) System.out.println(" Matching retrieved idle thread with a pending task.");
 				idleThread.assignTask(taskQueue.removeFirst());
+				idleThread.notify();
 			}
 		}
 	}

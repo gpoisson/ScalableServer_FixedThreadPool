@@ -18,7 +18,7 @@ public class Server implements Node {
 		
 		// Check arguments
 		if (args.length < 2) {
-			usage();
+			System.out.println(usage());
 			System.exit(0);
 		}
 		
