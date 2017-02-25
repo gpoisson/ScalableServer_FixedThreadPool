@@ -41,11 +41,13 @@ public class ThreadPoolManager implements Runnable {
 		}
 	}
 	
-	private synchronized WorkerThread retrieveIdleThread() {
+	private WorkerThread retrieveIdleThread() {
 		if (idleThreads.size() > 0) {
-			WorkerThread idleThread = idleThreads.removeFirst();
-			if (debug) System.out.println(" Idle thread retrieved.");
-			return idleThread;
+			synchronized (idleThreads) {
+				WorkerThread idleThread = idleThreads.removeFirst();
+				if (debug) System.out.println(" Idle thread retrieved.");
+				return idleThread;
+			}
 		}
 		return null;
 	}
