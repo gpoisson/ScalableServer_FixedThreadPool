@@ -44,7 +44,7 @@ public class Server implements Node {
 		 *      
 		 * 
 		 */
-		Thread serverListener = new Thread(new ServerListener(server.serverPort, debug));
+		Thread serverListener = new Thread(new ServerListener(server.serverPort, server.threadPoolSize, debug));
 		serverListener.start();
 		server.tpManager.start();
 	}

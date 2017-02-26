@@ -9,10 +9,10 @@ import cs455.scaling.server.tasks.Task;
 
 public class ThreadPoolManager implements Runnable {
 	
-	private final WorkerThread[] workerThreads;
-	private final Thread[] threadPool;
-	private final LinkedList<Task> taskQueue;
-	private final LinkedList<WorkerThread> idleThreads;
+	private final WorkerThread[] workerThreads;					// References to worker thread objects
+	private final Thread[] threadPool;							// References to running worker threads
+	private final LinkedList<Task> taskQueue;					// FIFO task queue
+	private final LinkedList<WorkerThread> idleThreads;			// FIFO queue for idle threads
 	private final boolean debug;
 	private boolean shutDown;
 	
@@ -28,7 +28,7 @@ public class ThreadPoolManager implements Runnable {
 		if (debug) System.out.println(" Thread pool constructed");
 	}
 	
-	// Populates the thread pool with task objects
+	// Populates the thread pool with worker threads
 	private synchronized void populateThreadPool() {
 		if (debug) System.out.println(" Populating thread pool with " + threadPool.length + " threads.");
 		for (int id = 0; id < threadPool.length; id++) {
@@ -37,7 +37,7 @@ public class ThreadPoolManager implements Runnable {
 		}
 	}
 	
-	// Executes all the thread objects in the thread pool
+	// Executes all the worker threads in the thread pool
 	private synchronized void startThreadPool() {
 		if (debug) System.out.println(" Executing the threads in the thread pool...");
 		for (int id = 0; id < threadPool.length; id++) {
@@ -49,7 +49,7 @@ public class ThreadPoolManager implements Runnable {
 	private WorkerThread retrieveIdleThread() {
 		if (idleThreads.size() > 0) {
 			synchronized (idleThreads) {
-				WorkerThread idleThread = idleThreads.remove(0);
+				WorkerThread idleThread = idleThreads.removeFirst();
 				if (debug) System.out.println(" Idle thread " + idleThread.getId() + " retrieved.");
 				return idleThread;
 			}
@@ -67,8 +67,6 @@ public class ThreadPoolManager implements Runnable {
 		
 		// Begin monitoring for idle threads
 		if (debug) System.out.println(" Thread pool manager now monitoring for idle worker threads and pending tasks...");
-		ComputeHashTask cht = new ComputeHashTask();
-		taskQueue.add(cht);
 		while (!shutDown) {
 			if ((idleThreads.size() > 0) && (taskQueue.size() > 0)) {
 				WorkerThread idleThread = retrieveIdleThread();
