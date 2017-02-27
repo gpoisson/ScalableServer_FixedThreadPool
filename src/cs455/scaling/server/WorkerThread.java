@@ -1,4 +1,4 @@
-package cs455.scaling;
+package cs455.scaling.server;
 
 import java.nio.channels.ServerSocketChannel;
 import java.util.ArrayList;

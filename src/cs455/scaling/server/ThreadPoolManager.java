@@ -3,7 +3,7 @@ package cs455.scaling.server;
 import java.util.ArrayList;
 import java.util.LinkedList;
 
-import cs455.scaling.WorkerThread;
+import cs455.scaling.server.WorkerThread;
 import cs455.scaling.server.tasks.ComputeHashTask;
 import cs455.scaling.server.tasks.Task;
 
