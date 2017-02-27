@@ -1,5 +1,8 @@
 package cs455.scaling.server;
 
+import java.io.IOException;
+import java.nio.channels.SelectionKey;
+import java.nio.channels.SocketChannel;
 import java.util.ArrayList;
 import java.util.LinkedList;
 
@@ -55,6 +58,24 @@ public class ThreadPoolManager implements Runnable {
 			}
 		}
 		return null;
+	}
+	
+	// Upon receiving a new connection, the main thread immediately finds the worker
+	//  thread with the fewest active connections and assigns the socket channel to that thread.
+	//  The worker thread is responsible for registering the socketChannel to a selector and
+	//  processing communications.
+	public synchronized void passNewSocketChannel(SocketChannel socketChannel) {
+		if (debug) System.out.println("  Thread pool received socket channel for new client...");
+		int fewestConnections = 2147483647;
+		WorkerThread lightestLoad = null;
+		for (WorkerThread wt: workerThreads){
+			if (wt.getConnectionCount() < fewestConnections) {
+				lightestLoad = wt;
+				fewestConnections = wt.getConnectionCount();
+			}
+		}
+		if (debug) System.out.println("  Thread pool passed new socket channel to thread " + lightestLoad.getId());
+		lightestLoad.registerNewSocketChannel(socketChannel);
 	}
 
 	@Override

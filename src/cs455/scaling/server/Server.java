@@ -1,17 +1,26 @@
 package cs455.scaling.server;
 
+import java.io.IOException;
+import java.net.InetSocketAddress;
+import java.nio.channels.ServerSocketChannel;
+import java.nio.channels.SocketChannel;
+
 import cs455.scaling.Node;
 
 public class Server implements Node {
 
 	private final int serverPort;
 	private final int threadPoolSize;
-	private final Thread tpManager;
+	private final ThreadPoolManager tpManager;
+	private final Thread tpManagerThread;
+	private boolean shutDown;
 	
 	private Server(int serverPort, int threadPoolSize) {
 		this.serverPort = serverPort;
 		this.threadPoolSize = threadPoolSize;
-		this.tpManager = new Thread(new ThreadPoolManager(this.threadPoolSize, debug));
+		this.tpManager = new ThreadPoolManager(this.threadPoolSize, debug);
+		this.tpManagerThread = new Thread(this.tpManager);
+		this.shutDown = false;
 	}
 	
 	public static void main(String[] args) {
@@ -44,9 +53,36 @@ public class Server implements Node {
 		 *      
 		 * 
 		 */
-		Thread serverListener = new Thread(new ServerListener(server.serverPort, server.threadPoolSize, debug));
-		serverListener.start();
-		server.tpManager.start();
+		
+		// Open a Server Socket channel
+		ServerSocketChannel serverSocketChannel = null;
+		
+		try {
+			serverSocketChannel = ServerSocketChannel.open();
+			serverSocketChannel.socket().bind(new InetSocketAddress(server.serverPort));
+			if (debug) System.out.println(" Server socket channel opened.\n\tAddress: " + serverSocketChannel.socket().getInetAddress() + "\n\tPort: " + serverSocketChannel.socket().getLocalPort());
+		} catch (IOException e) {
+			System.out.println(e);
+		}
+		
+		if (debug) System.out.println(" Server socket channel waiting for incoming connections...");
+		
+		server.tpManagerThread.start();
+		
+		while (!server.shutDown) {
+			try {
+				SocketChannel socketChannel = serverSocketChannel.accept();
+				
+				if (socketChannel != null) {
+					if (debug) System.out.println(" New connection detected. Socket channel created.");
+				}
+				
+				server.tpManager.passNewSocketChannel(socketChannel);
+				
+			} catch (IOException e) {
+				System.out.println(e);
+			}
+		}
 	}
 	
 	private static String usage() {

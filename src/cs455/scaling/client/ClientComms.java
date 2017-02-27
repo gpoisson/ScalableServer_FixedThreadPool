@@ -68,7 +68,7 @@ public class ClientComms implements Runnable {
 					System.out.println(e);
 				}
 			}
-			if (debug) System.out.println(" Client communications thread suspending for " + (1.0/messageRate) + " seconds.");
+			if (debug) System.out.println(" Client communications thread suspending for " + (long) (1.0/messageRate) + " seconds.");
 			try {
 				Thread.sleep((long) (1.0/messageRate));
 			} catch (InterruptedException e) {
