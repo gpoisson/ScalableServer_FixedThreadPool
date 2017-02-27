@@ -10,7 +10,7 @@ public class HashMessage {
 	public HashMessage() {
 		payloadSizeBytes = 8192;
 		payload = new byte[payloadSizeBytes];
-		new Random().nextBytes(payload);
+		generateNewPayload();
 	}
 	
 	// Generates a copy of the payload and returns it
@@ -18,6 +18,10 @@ public class HashMessage {
 		byte[] copyOfPayload = new byte[payloadSizeBytes];
 		copyOfPayload = payload;
 		return copyOfPayload;
+	}
+	
+	public void generateNewPayload() {
+		new Random().nextBytes(payload);
 	}
 
 }
