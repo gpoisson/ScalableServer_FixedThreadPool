@@ -2,8 +2,12 @@ package cs455.scaling.server;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.nio.ByteBuffer;
+import java.nio.channels.SelectionKey;
+import java.nio.channels.Selector;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
+import java.util.Iterator;
 
 import cs455.scaling.Node;
 
@@ -13,6 +17,8 @@ public class Server implements Node {
 	private final int threadPoolSize;
 	private final ThreadPoolManager tpManager;
 	private final Thread tpManagerThread;
+	private Selector selector;
+	private final int bufferSize;
 	private boolean shutDown;
 	
 	private Server(int serverPort, int threadPoolSize) {
@@ -21,6 +27,14 @@ public class Server implements Node {
 		this.tpManager = new ThreadPoolManager(this.threadPoolSize, debug);
 		this.tpManagerThread = new Thread(this.tpManager);
 		this.shutDown = false;
+		this.bufferSize = 60;
+		
+		try {
+			this.selector = Selector.open();
+		} catch (IOException e) {
+			System.out.println(e);
+			this.selector = null;
+		}
 	}
 	
 	public static void main(String[] args) {
@@ -71,18 +85,81 @@ public class Server implements Node {
 		
 		while (!server.shutDown) {
 			try {
-				SocketChannel socketChannel = serverSocketChannel.accept();
+				if (debug) System.out.println(" Server selector waiting for incoming connections...");
+				server.selector.select();
+				if (debug) System.out.println(" Server selector connected...");
+
+				Iterator keys = server.selector.selectedKeys().iterator();
+				if (debug) System.out.println(" Server selector has new keys...");
+				while (keys.hasNext()) {
+					SelectionKey key = (SelectionKey) keys.next();
+					if (key.isAcceptable()) {
+						server.accept(key);
+						if (debug) System.out.println(" Server accepted new connection");
+					}
+					else if (key.isReadable()) {
+						if (debug) System.out.println(" Server reading...");
+						server.read(key);
+					}
+				}
 				
+				/*
 				if (socketChannel != null) {
 					if (debug) System.out.println(" New connection detected. Socket channel created.");
 				}
 				
 				server.tpManager.passNewSocketChannel(socketChannel);
-				
+				*/
 			} catch (IOException e) {
 				System.out.println(e);
 			}
 		}
+	}
+	
+	private void accept(SelectionKey key) throws IOException {
+		ServerSocketChannel serverSocket = (ServerSocketChannel) key.channel();
+		SocketChannel channel = serverSocket.accept();
+		
+		System.out.println("Accepting incoming connection");
+		channel.configureBlocking(false);
+		channel.register(this.selector, SelectionKey.OP_READ);
+	}
+	
+	private void read(SelectionKey key) throws IOException {
+		SocketChannel channel = (SocketChannel) key.channel();
+		ByteBuffer buffer = ByteBuffer.allocate(bufferSize);
+		int read = 0;
+		try {
+			while (buffer.hasRemaining() && read != -1) {
+				read = channel.read(buffer);
+			}
+		} catch (IOException e) {
+			// Abnormal termination
+			
+			/*
+			 *  ADD SERVER DISCONNECT HERE
+			 *  server.disconnect(key);
+			 *  return;
+			 */
+		}
+		if (read == -1) {
+			// Connection terminated by client
+			
+			/*
+			 *  server.disconnect(key);
+			 *  return;
+			 */
+		}
+		key.interestOps(SelectionKey.OP_WRITE);
+	}
+	
+	private void write(SelectionKey key) throws IOException {
+		SocketChannel channel = (SocketChannel) key.channel();
+		// Data stored in 'data' of type: byte[]
+		/*ByteBuffer buffer = ByteBuffer.wrap(data);
+		 * channel.write(buffer);
+		 * key.interestOps(SelectionKey.OP_READ);
+		 */
 	}
 	
 	private static String usage() {

@@ -38,7 +38,8 @@ public class Client implements Node {
 		
 		System.out.println("New client initialized.  Server host: " + client.serverHost + " \tServer Port: " + client.serverPort + "\tMessageRate: " + client.messageRate);
 	
-		client.comm = new Thread(new ClientComms(client.serverHost, client.serverPort, client.messageRate, debug));
+		//client.comm = new Thread(new ClientComms(client.serverHost, client.serverPort, client.messageRate, debug));
+		client.comm = new Thread(new NIOClientComms(client.serverHost, client.serverPort, client.messageRate, debug));
 		client.comm.start();
 	}
 	
