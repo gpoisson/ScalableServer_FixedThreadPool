@@ -17,8 +17,8 @@ public class Server implements Node {
 	private final int threadPoolSize;
 	private final ThreadPoolManager tpManager;
 	private final Thread tpManagerThread;
-	private Selector selector;
 	private final int bufferSize;
+	private Selector selector;
 	private boolean shutDown;
 	
 	private Server(int serverPort, int threadPoolSize) {
@@ -28,16 +28,9 @@ public class Server implements Node {
 		this.tpManagerThread = new Thread(this.tpManager);
 		this.shutDown = false;
 		this.bufferSize = 60;
-		
-		try {
-			this.selector = Selector.open();
-		} catch (IOException e) {
-			System.out.println(e);
-			this.selector = null;
-		}
 	}
 	
-	public static void main(String[] args) {
+	public static void main(String[] args) throws IOException {
 		
 		// Check arguments
 		if (args.length < 2) {
@@ -68,51 +61,44 @@ public class Server implements Node {
 		 * 
 		 */
 		
+		// Open selector
+		server.selector = Selector.open();
+		
 		// Open a Server Socket channel
-		ServerSocketChannel serverSocketChannel = null;
-		
-		try {
-			serverSocketChannel = ServerSocketChannel.open();
-			serverSocketChannel.socket().bind(new InetSocketAddress(server.serverPort));
-			if (debug) System.out.println(" Server socket channel opened.\n\tAddress: " + serverSocketChannel.socket().getInetAddress() + "\n\tPort: " + serverSocketChannel.socket().getLocalPort());
-		} catch (IOException e) {
-			System.out.println(e);
-		}
-		
+		ServerSocketChannel serverSocketChannel = ServerSocketChannel.open();
+		serverSocketChannel.socket().bind(new InetSocketAddress(server.serverPort));
+		if (debug) System.out.println(" Server socket channel opened.\n\tAddress: " + serverSocketChannel.socket().getInetAddress() + "\n\tPort: " + serverSocketChannel.socket().getLocalPort());
+
 		if (debug) System.out.println(" Server socket channel waiting for incoming connections...");
 		
 		server.tpManagerThread.start();
 		
 		while (!server.shutDown) {
-			try {
-				if (debug) System.out.println(" Server selector waiting for incoming connections...");
-				server.selector.select();
-				if (debug) System.out.println(" Server selector connected...");
+			if (debug) System.out.println(" Server selector waiting for incoming connections...");
+			server.selector.select();
+			if (debug) System.out.println(" Server selector connected...");
 
-				Iterator keys = server.selector.selectedKeys().iterator();
-				if (debug) System.out.println(" Server selector has new keys...");
-				while (keys.hasNext()) {
-					SelectionKey key = (SelectionKey) keys.next();
-					if (key.isAcceptable()) {
-						server.accept(key);
-						if (debug) System.out.println(" Server accepted new connection");
-					}
-					else if (key.isReadable()) {
-						if (debug) System.out.println(" Server reading...");
-						server.read(key);
-					}
+			Iterator keys = server.selector.selectedKeys().iterator();
+			if (debug) System.out.println(" Server selector has new keys...");
+			while (keys.hasNext()) {
+				SelectionKey key = (SelectionKey) keys.next();
+				if (key.isAcceptable()) {
+					server.accept(key);
+					if (debug) System.out.println(" Server accepted new connection");
 				}
-				
-				/*
-				if (socketChannel != null) {
-					if (debug) System.out.println(" New connection detected. Socket channel created.");
+				else if (key.isReadable()) {
+					if (debug) System.out.println(" Server reading...");
+					server.read(key);
 				}
-				
-				server.tpManager.passNewSocketChannel(socketChannel);
-				*/
-			} catch (IOException e) {
-				System.out.println(e);
 			}
+			
+			/*
+			if (socketChannel != null) {
+				if (debug) System.out.println(" New connection detected. Socket channel created.");
+			}
+			
+			server.tpManager.passNewSocketChannel(socketChannel);
+			*/
 		}
 	}
 	
