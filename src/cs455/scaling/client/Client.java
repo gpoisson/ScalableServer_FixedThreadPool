@@ -7,16 +7,16 @@ import cs455.util.HashComputer;
 
 public class Client implements Node {
 
-	private String serverHost;
-	private int serverPort;
-	private int messageRate;
+	private String serverHost;						// Server IP address
+	private int serverPort;							// Server port number
+	private int messageRate;						// Number of message to send per second
 	
-	private HashComputer hashComputer;
-	private LinkedList<String> hashCodes;
+	private HashComputer hashComputer;				// Takes a byte array as input and returns an integer hash value using the SHA1 algorithm
+	private LinkedList<String> hashCodes;			// A queue of hash codes for messages sent by the client
 	
-	private Thread comm;
+	private Thread comm;							// Client communications thread
 	
-	public Client () {
+	private Client () {
 		hashComputer = new HashComputer();
 		hashCodes = new LinkedList<String>();
 	}

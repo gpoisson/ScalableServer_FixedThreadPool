@@ -11,11 +11,9 @@ import java.util.Iterator;
 public class NIOClientComms implements Runnable {
 
 	SocketChannel socketChannel;
-	Selector selector;
 	private final String serverHostname;
 	private final int serverPort;
 	private final int messageRate;
-	private SelectionKey key;
 	private boolean shutDown;
 	private final boolean debug;
 	
@@ -29,7 +27,6 @@ public class NIOClientComms implements Runnable {
 			//SocketAddress address = new InetSocketAddress(this.serverHostname, this.serverPort);
 			//socketChannel = SocketChannel.open(address);
 			socketChannel = SocketChannel.open();
-			selector = Selector.open();
 		} catch (IOException e) {
 			System.out.println(e);
 		}
@@ -46,29 +43,9 @@ public class NIOClientComms implements Runnable {
 	
 	private void startClient() throws IOException {
 		if (debug) System.out.println("NIOClientComms starting the client...");
-		socketChannel.configureBlocking(false);
-		key = socketChannel.register(selector, SelectionKey.OP_CONNECT);
 		socketChannel.connect(new InetSocketAddress(serverHostname, serverPort));
 		if (debug) System.out.println("  Client connected to server.");
-		while (!shutDown) {
-			if (key.isConnectable()) {
-				connect(key);
-				if (debug) System.out.println(" Client connected");
-			}
-			else if (key.isAcceptable()) {
-				if (debug) System.out.println(" Key is acceptable");
-			}
-			else if (key.isWritable()) {
-				if (debug) System.out.println(" Client ready to write to channel");
-			}
-			else if (key.isReadable()) {
-				if (debug) System.out.println(" Client ready to read from channel");
-			}
-			else {
-				//if (debug) System.out.println(" Client key: " + key.interestOps());
-			}
-			//System.out.println(SelectionKey.OP_ACCEPT + " " + SelectionKey.OP_CONNECT + " " + SelectionKey.OP_READ + " " + SelectionKey.OP_WRITE);
-		}
+
 	}
 	
 	private void connect (SelectionKey key) throws IOException {

@@ -6,6 +6,7 @@ import java.security.NoSuchAlgorithmException;
 
 public class HashComputer {
 	
+	// Takes a byte array as input and returns an integer hash value using the SHA1 algorithm
 	public String SHA1FromBytes(byte[] data) {
 		MessageDigest digest;
 		try {

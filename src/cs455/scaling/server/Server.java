@@ -19,6 +19,7 @@ public class Server implements Node {
 	private final Thread tpManagerThread;
 	private final int bufferSize;
 	private Selector selector;
+	private final ByteBuffer buffer;
 	private boolean shutDown;
 	
 	private Server(int serverPort, int threadPoolSize) {
@@ -27,6 +28,7 @@ public class Server implements Node {
 		this.tpManager = new ThreadPoolManager(this.threadPoolSize, debug);
 		this.tpManagerThread = new Thread(this.tpManager);
 		this.shutDown = false;
+		this.buffer = ByteBuffer.allocate(60);
 		this.bufferSize = 60;
 	}
 	
@@ -64,18 +66,22 @@ public class Server implements Node {
 		// Open selector
 		server.selector = Selector.open();
 		
-		// Open a Server Socket channel
+		// Configure a Server Socket channel
 		ServerSocketChannel serverSocketChannel = ServerSocketChannel.open();
 		serverSocketChannel.socket().bind(new InetSocketAddress(server.serverPort));
+        serverSocketChannel.configureBlocking(false);
+        serverSocketChannel.register(server.selector, SelectionKey.OP_ACCEPT);
+        
 		if (debug) System.out.println(" Server socket channel opened.\n\tAddress: " + serverSocketChannel.socket().getInetAddress() + "\n\tPort: " + serverSocketChannel.socket().getLocalPort());
-
 		if (debug) System.out.println(" Server socket channel waiting for incoming connections...");
 		
 		server.tpManagerThread.start();
 		
 		while (!server.shutDown) {
-			if (debug) System.out.println(" Server selector waiting for incoming connections...");
+			if (debug) System.out.println(" Server selector waiting for new incoming connections...");
+			
 			server.selector.select();
+			
 			if (debug) System.out.println(" Server selector connected...");
 
 			Iterator keys = server.selector.selectedKeys().iterator();
@@ -83,13 +89,29 @@ public class Server implements Node {
 			while (keys.hasNext()) {
 				SelectionKey key = (SelectionKey) keys.next();
 				if (key.isAcceptable()) {
+					if (debug) System.out.println(" Connection accepted by server socket channel...");
+					
+					//SocketChannel socketChannel = serverSocketChannel.accept();
+					//socketChannel.configureBlocking(false);
+					//socketChannel.register(server.selector, SelectionKey.OP_READ);
 					server.accept(key);
-					if (debug) System.out.println(" Server accepted new connection");
 				}
-				else if (key.isReadable()) {
-					if (debug) System.out.println(" Server reading...");
-					server.read(key);
+				else if (key.isConnectable()) {
+					if (debug) System.out.println(" Connection established with remote server");
+					
 				}
+				if (key.isReadable()) {
+					if (debug) System.out.println(" Channel ready for reading...");
+					
+                    server.read(key);
+				}
+				if (key.isWritable()) {
+					if (debug) System.out.println(" Channel ready for writing...");
+					//socketChannel.write(buffer);
+                    //buffer.clear();
+					server.write(key);
+				}
+				keys.remove();
 			}
 			
 			/*
@@ -106,19 +128,23 @@ public class Server implements Node {
 		ServerSocketChannel serverSocket = (ServerSocketChannel) key.channel();
 		SocketChannel channel = serverSocket.accept();
 		
-		System.out.println("Accepting incoming connection");
+		System.out.println("Accepted incoming connection");
 		channel.configureBlocking(false);
 		channel.register(this.selector, SelectionKey.OP_READ);
+		System.out.println("Incoming connection registered with server selector");
 	}
 	
 	private void read(SelectionKey key) throws IOException {
+		System.out.println("Reading data from channel...");
 		SocketChannel channel = (SocketChannel) key.channel();
-		ByteBuffer buffer = ByteBuffer.allocate(bufferSize);
+		//ByteBuffer buffer = ByteBuffer.allocate(bufferSize);
 		int read = 0;
 		try {
 			while (buffer.hasRemaining() && read != -1) {
 				read = channel.read(buffer);
+                buffer.flip();
 			}
+			System.out.println("...Data read from channel.  read: " + read);
 		} catch (IOException e) {
 			// Abnormal termination
 			
@@ -136,6 +162,7 @@ public class Server implements Node {
 			 *  return;
 			 */
 		}
+		System.out.println(" Switching key interest to WRITE");
 		key.interestOps(SelectionKey.OP_WRITE);
 	}
 	
