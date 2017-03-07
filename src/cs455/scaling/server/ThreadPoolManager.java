@@ -60,10 +60,11 @@ public class ThreadPoolManager implements Runnable {
 		return null;
 	}
 	
+	// Enqueues a new task into the task queue, where it will wait to eventually be assigned to an idle worker thread
 	public void enqueueTask(Task newTask) {
 		synchronized(taskQueue) {
-			if (debug) System.out.println(" Thread pool manager enqueuing new task... there are now " + taskQueue.size() + " queued tasks and " + idleThreads.size() + " idle threads...");
 			taskQueue.add(newTask);
+			if (debug) System.out.println(" Thread pool manager enqueuing new task... there are now " + taskQueue.size() + " queued tasks and " + idleThreads.size() + " idle threads...");
 		}
 	}
 
@@ -84,16 +85,18 @@ public class ThreadPoolManager implements Runnable {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
-			if (debug) System.out.println("  Thread pool manager!  Task Queue: " + taskQueue.size() + "   Idle Threads: " + idleThreads.size());
+			if (debug) System.out.println("  Thread pool manager --  Task Queue: " + taskQueue.size() + "   Idle Threads: " + idleThreads.size());
 			if ((idleThreads.size() > 0) && (taskQueue.size() > 0)) {
-				if (debug) System.out.println("  Thread pool manager has things to do!!!!");
+				if (debug) System.out.println("  Thread pool manager detects idle threads and pending tasks.");
 				WorkerThread idleThread = retrieveIdleThread();
 				synchronized(idleThread) {
 					if (debug) System.out.println(" Matching retrieved idle thread with a pending task.");
-					idleThread.notify();
 					//synchronized (taskQueue) {
-						idleThread.assignTask(taskQueue.removeFirst());
-						if (debug) System.out.println(" Thread and task matched. Task queue size is now: " + taskQueue.size());
+					idleThread.assignTask(taskQueue.removeFirst());
+					synchronized(idleThread.sleepLock) {
+						idleThread.sleepLock.notify();
+					}
+					if (debug) System.out.println(" Thread and task matched. Task queue size is now: " + taskQueue.size());
 					//}
 				}
 			}

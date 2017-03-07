@@ -92,7 +92,7 @@ public class Server implements Node {
 			if (debug) System.out.println(" Server selector has new keys...");
 			
 			while (keys.hasNext()) {
-				long waitTime = (long) 1000.0;
+				int waitTime = 1000;
 				try {
 					Thread.sleep(waitTime);
 				} catch (InterruptedException e) {
@@ -102,43 +102,22 @@ public class Server implements Node {
 				SelectionKey key = (SelectionKey) keys.next();
 				if (key.isAcceptable()) {
 					if (debug) System.out.println(" Connection accepted by server socket channel...");
-					
-					//SocketChannel socketChannel = serverSocketChannel.accept();
-					//socketChannel.configureBlocking(false);
-					//socketChannel.register(server.selector, SelectionKey.OP_READ);
 					server.accept(key);
 				}
-				else if (key.isConnectable()) {
-					if (debug) System.out.println(" Connection established with remote server");
-					
-				}
-				if (key.isReadable()) {
+				else if (key.isReadable()) {
 					if (debug) System.out.println(" Channel ready for reading...");
-					
-                    //server.read(key);
 					AcceptIncomingTrafficTask readTask = new AcceptIncomingTrafficTask(key);
 					if (debug) System.out.println(" Passing new read task to thread pool manager...");
 					server.tpManager.enqueueTask(readTask);
 				}
-				if (key.isWritable()) {
+				else if (key.isWritable()) {
 					if (debug) System.out.println(" Channel ready for writing...");
-					//socketChannel.write(buffer);
-                    //buffer.clear();
-					//server.write(key);
 					ReplyToClientTask writeTask = new ReplyToClientTask(key);
 					if (debug) System.out.println(" Passing new write task to thread pool manager...");
 					server.tpManager.enqueueTask(writeTask);
 				}
 				keys.remove();
 			}
-			
-			/*
-			if (socketChannel != null) {
-				if (debug) System.out.println(" New connection detected. Socket channel created.");
-			}
-			
-			server.tpManager.passNewSocketChannel(socketChannel);
-			*/
 		}
 	}
 	
@@ -148,84 +127,10 @@ public class Server implements Node {
 		
 		if (debug) System.out.println("Accepted incoming connection");
 		clientChannel.configureBlocking(false);
-		int interests = SelectionKey.OP_READ | SelectionKey.OP_WRITE;
-		clientChannel.register(this.selector, interests);
+		//int interests = SelectionKey.OP_READ | SelectionKey.OP_WRITE;
+		//clientChannel.register(this.selector, interests);
+		clientChannel.register(this.selector, SelectionKey.OP_READ);
 		if (debug) System.out.println("Incoming connection registered with server selector");
-	}
-	
-	private void read(SelectionKey key) throws IOException {
-		if (debug) System.out.println("Reading data from channel...");
-		SocketChannel clientChannel = (SocketChannel) key.channel();
-		//ByteBuffer buffer = ByteBuffer.allocate(bufferSize);
-		int read = 0;
-		try {
-			while (buffer.hasRemaining() && read != -1) {
-				read = clientChannel.read(buffer);
-                //buffer.flip();
-			}
-			if (debug) System.out.println("...Data read from channel.  read: " + read);
-			buffer.rewind();
-			while (buffer.hasRemaining()){
-				if (debug) System.out.print((char) buffer.get());
-			}
-			if (debug) System.out.println();
-			buffer.flip();
-		} catch (IOException e) {
-			// Abnormal termination
-			
-			/*
-			 *  ADD SERVER DISCONNECT HERE
-			 *  server.disconnect(key);
-			 *  return;
-			 */
-		}
-		if (read == -1) {
-			// Connection terminated by client
-			
-			/*
-			 *  server.disconnect(key);
-			 *  return;
-			 */
-		}
-		//if (debug) System.out.println(" Switching key interest to WRITE");
-		//key.interestOps(SelectionKey.OP_WRITE);
-	}
-	
-	private void write(SelectionKey key) throws IOException {
-		SocketChannel clientChannel = (SocketChannel) key.channel();
-		int read = 0;
-		buffer.rewind();
-		String testResponse = "test response";
-		buffer.put(testResponse.getBytes());
-		buffer.rewind();
-		try {
-			while (buffer.hasRemaining() && read != -1) {
-				read = clientChannel.write(buffer);
-                //buffer.flip();
-			}
-			if (debug) System.out.println("...Data written to channel.  read: " + read);
-			buffer.rewind();
-			while (buffer.hasRemaining()){
-				if (debug) System.out.print((char) buffer.get());
-			}
-			if (debug) System.out.println();
-			buffer.flip();
-		} catch (IOException e) {
-			// Abnormal termination
-			
-			/*
-			 *  ADD SERVER DISCONNECT HERE
-			 *  server.disconnect(key);
-			 *  return;
-			 */
-		}
-		// Data stored in 'data' of type: byte[]
-		/*ByteBuffer buffer = ByteBuffer.wrap(data);
-		 * channel.write(buffer);
-		 * key.interestOps(SelectionKey.OP_READ);
-		 */
-		//if (debug) System.out.println(" Switching key interest to READ");
-		//key.interestOps(SelectionKey.OP_READ);
 	}
 	
 	private static String usage() {

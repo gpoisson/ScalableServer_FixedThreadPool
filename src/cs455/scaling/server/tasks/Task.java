@@ -6,7 +6,5 @@ package cs455.scaling.server.tasks;
  * 3. Write Message
  */
 public abstract class Task {
-
-	int taskType;
 	
 }

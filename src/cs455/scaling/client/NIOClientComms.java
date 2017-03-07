@@ -27,7 +27,7 @@ public class NIOClientComms {
 		this.serverPort = serverPort;
 		this.messageRate = messageRate;
 		this.shutDown = false;
-		this.buffer = ByteBuffer.allocate(60);
+		this.buffer = ByteBuffer.allocate(8192);
 		this.debug = debug;
 		selector = Selector.open();
 		socketChannel = SocketChannel.open();
@@ -41,10 +41,10 @@ public class NIOClientComms {
 		if (debug) System.out.println("Client connected to server: " + socketChannel.getRemoteAddress());
 		while (!shutDown){
 			HashMessage hashMessage = new HashMessage();
-			String testString = "test string";
+			//String testString = "test string";
 			//buffer.wrap(hashMessage.getPayload());
 			buffer.rewind();
-			buffer.put(testString.getBytes());
+			buffer.put(hashMessage.getPayload());
 			buffer.rewind();
 			//while (buffer.hasRemaining()){
 			//	System.out.print((char) buffer.get());
@@ -62,7 +62,7 @@ public class NIOClientComms {
 			if (debug) System.out.println(" Client received msg from server: " + receivedHash);
 			buffer.clear();
 			long waitTime = (long) (1000.0/messageRate);
-			if (debug) System.out.println(" Client waiting for " + waitTime + " seconds...");
+			if (debug) System.out.println(" Client waiting for " + (waitTime/1000) + " seconds...");
 			try {
 				Thread.sleep(waitTime);
 			} catch (InterruptedException e) {
