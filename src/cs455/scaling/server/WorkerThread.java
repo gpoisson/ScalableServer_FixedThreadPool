@@ -24,8 +24,6 @@ public class WorkerThread implements Runnable {
 	
 	public Object sleepLock;
 	
-	private ServerSocketChannel ssChannel;
-	
 	public WorkerThread(LinkedList<WorkerThread> idleThreads, int id, boolean debug) {
 		this.debug = debug; 
 		this.workerThreadID = id;
@@ -50,35 +48,15 @@ public class WorkerThread implements Runnable {
 				if (debug) System.out.println("  Worker thread " + workerThreadID + " has a task.");
 			}
 			else {
-				//reportIdle();
-				try {
-					if (debug) System.out.println(" Worker thread " + workerThreadID + " waiting for incoming data.");
-					this.selector.select();
-					
-					Iterator keys =	this.selector.selectedKeys().iterator();   
-					
-					while(keys.hasNext()) {
-						SelectionKey key = (SelectionKey) keys.next();
-						if (key.isAcceptable())   
-						{   
-							this.accept(key);
-						}  
-					}
-					if (debug) System.out.println(" Worker thread " + workerThreadID + " received incoming data.");
-				} catch (IOException e) {
-					System.out.println(e);
-				}
+				reportIdle();
+				
+				//if (debug) System.out.println(" Worker thread " + workerThreadID + " waiting for task.");
+
+				//if (debug) System.out.println(" Worker thread " + workerThreadID + " received task.");
+			
 			}
 		}
 	}
-	
-	private void accept(SelectionKey key) throws IOException {
-		ServerSocketChannel	servSocket = (ServerSocketChannel) key.channel();   
-		SocketChannel channel = servSocket.accept();
-		System.out.println("Accepting incoming connection");   
-		channel.configureBlocking(false);
-		channel.register(selector, SelectionKey.OP_READ);   
-	}   
 	
 	// Allows the thread pool manager to monitor for idle worker threads
 	private void reportIdle() {
@@ -125,11 +103,17 @@ public class WorkerThread implements Runnable {
 		}
 	}
 	
-	public synchronized void assignTask(Task newTask) {
+	public void assignTask(Task newTask) {
 		if (debug) System.out.println("Worker thread " + workerThreadID + " accepting new task...");
-		if (newTask != null) {
-			idle = false;
-			currentTask = newTask;
+		synchronized (currentTask) {
+			if (newTask != null) {
+				idle = false;
+				currentTask = newTask;
+				if (debug) System.out.println("Worker thread " + workerThreadID + " reports new task accepted.");
+			}
+			else {
+				if (debug) System.out.println("Worker thread " + workerThreadID + " reports there is already a current task!!!");
+			}
 		}
 	}
 }

@@ -11,7 +11,7 @@ import java.util.Iterator;
 
 import cs455.message.HashMessage;
 
-public class NIOClientComms implements Runnable {
+public class NIOClientComms {
 
 	SocketChannel socketChannel;
 	private final String serverHostname;
@@ -27,22 +27,13 @@ public class NIOClientComms implements Runnable {
 		this.serverPort = serverPort;
 		this.messageRate = messageRate;
 		this.shutDown = false;
-		this.buffer = ByteBuffer.allocate(11);
+		this.buffer = ByteBuffer.allocate(60);
 		this.debug = debug;
 		selector = Selector.open();
 		socketChannel = SocketChannel.open();
 	}
-	
-	@Override
-	public void run() {
-		try {
-			startClient();
-		} catch (IOException e) {
-			System.out.println(e);
-		}
-	}
-	
-	private void startClient() throws IOException {
+		
+	public void startClient() throws IOException {
 		if (debug) System.out.println("NIOClientComms starting the client...");
 		//SelectionKey key = socketChannel.register(selector, SelectionKey.OP_CONNECT);
 		//connect(key);
@@ -52,10 +43,15 @@ public class NIOClientComms implements Runnable {
 			HashMessage hashMessage = new HashMessage();
 			String testString = "test string";
 			//buffer.wrap(hashMessage.getPayload());
+			buffer.rewind();
 			buffer.put(testString.getBytes());
 			buffer.rewind();
-			if (debug) System.out.println(" Loaded buffer with data: " + buffer.array().toString());
-			buffer.rewind();
+			//while (buffer.hasRemaining()){
+			//	System.out.print((char) buffer.get());
+			//}
+			//buffer.rewind();
+			//if (debug) System.out.println(" Loaded buffer with data: " + buffer.array().toString());
+			//buffer.rewind();
 			if (debug) System.out.println(" Writing from buffer to socket channel...");
 			socketChannel.write(buffer);
 			if (debug) System.out.println(" Clearing buffer.");

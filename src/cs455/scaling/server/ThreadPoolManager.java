@@ -60,22 +60,11 @@ public class ThreadPoolManager implements Runnable {
 		return null;
 	}
 	
-	// Upon receiving a new connection, the main thread immediately finds the worker
-	//  thread with the fewest active connections and assigns the socket channel to that thread.
-	//  The worker thread is responsible for registering the socketChannel to a selector and
-	//  processing communications.
-	public synchronized void passNewSocketChannel(SocketChannel socketChannel) {
-		if (debug) System.out.println("  Thread pool received socket channel for new client...");
-		int fewestConnections = 2147483647;
-		WorkerThread lightestLoad = null;
-		for (WorkerThread wt: workerThreads){
-			if (wt.getConnectionCount() < fewestConnections) {
-				lightestLoad = wt;
-				fewestConnections = wt.getConnectionCount();
-			}
+	public void enqueueTask(Task newTask) {
+		synchronized(taskQueue) {
+			if (debug) System.out.println(" Thread pool manager enqueuing new task... there are now " + taskQueue.size() + " queued tasks and " + idleThreads.size() + " idle threads...");
+			taskQueue.add(newTask);
 		}
-		if (debug) System.out.println("  Thread pool passed new socket channel to thread " + lightestLoad.getId());
-		lightestLoad.registerNewSocketChannel(socketChannel);
 	}
 
 	@Override
@@ -89,13 +78,23 @@ public class ThreadPoolManager implements Runnable {
 		// Begin monitoring for idle threads
 		if (debug) System.out.println(" Thread pool manager now monitoring for idle worker threads and pending tasks...");
 		while (!shutDown) {
+			try {
+				Thread.sleep(1000);
+			} catch (InterruptedException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+			if (debug) System.out.println("  Thread pool manager!  Task Queue: " + taskQueue.size() + "   Idle Threads: " + idleThreads.size());
 			if ((idleThreads.size() > 0) && (taskQueue.size() > 0)) {
+				if (debug) System.out.println("  Thread pool manager has things to do!!!!");
 				WorkerThread idleThread = retrieveIdleThread();
 				synchronized(idleThread) {
 					if (debug) System.out.println(" Matching retrieved idle thread with a pending task.");
 					idleThread.notify();
-					idleThread.assignTask(taskQueue.removeFirst());
-					if (debug) System.out.println(" Thread and task matched. Task queue size is now: " + taskQueue.size());
+					//synchronized (taskQueue) {
+						idleThread.assignTask(taskQueue.removeFirst());
+						if (debug) System.out.println(" Thread and task matched. Task queue size is now: " + taskQueue.size());
+					//}
 				}
 			}
 		}
