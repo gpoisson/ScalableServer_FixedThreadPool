@@ -74,7 +74,6 @@ public class WorkerThread implements Runnable {
 			if (debug) System.out.println("Worker thread " + workerThreadID + " reading data from channel...");
 			
 			SelectionKey key = ((AcceptIncomingTrafficTask) currentTask).getKey();
-			ArrayList<Byte> payload = new ArrayList<Byte>();
 			synchronized (key) {
 				SocketChannel clientChannel = (SocketChannel) key.channel();
 				int read = 0;
@@ -83,18 +82,15 @@ public class WorkerThread implements Runnable {
 					while (buffer.hasRemaining() && read != -1) {
 						read = clientChannel.read(buffer);
 					}
-					if (debug) System.out.println("...Data read from channel.  read: " + read);
+					if (debug) System.out.println("...Data read from channel.  read: " + read + " bytes.");
 					buffer.rewind();
-					while (buffer.hasRemaining()) {
-						payload.add(buffer.get());
+					
+					byte[] payloadBytes = new byte[read];
+					for (int i = 0; i < read; i++){
+						payloadBytes[i] = buffer.get();
 					}
 					buffer.clear();
 					buffer.flip();
-					
-					byte[] payloadBytes = new byte[payload.size()];
-					for (int i = 0; i < payload.size(); i++){
-						payloadBytes[i] = payload.get(i);
-					}
 					ComputeHashTask computeHashTask = new ComputeHashTask(payloadBytes);
 					currentTask = computeHashTask;
 				} catch (IOException e) {
