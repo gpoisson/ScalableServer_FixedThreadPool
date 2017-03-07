@@ -53,6 +53,8 @@ public class WorkerThread implements Runnable {
 				String result = processTask();				// processTask returns a computed hash if task is a read task; null if task is a write task
 				if (result != null) {
 					
+					SelectionKey key = currentTask.getKey();
+					key.attach(null);
 				}
 			}
 			else {
@@ -73,7 +75,7 @@ public class WorkerThread implements Runnable {
 		if (currentTask instanceof AcceptIncomingTrafficTask) {
 			if (debug) System.out.println("Worker thread " + workerThreadID + " reading data from channel...");
 			
-			SelectionKey key = ((AcceptIncomingTrafficTask) currentTask).getKey();
+			SelectionKey key = currentTask.getKey();
 			synchronized (key) {
 				SocketChannel clientChannel = (SocketChannel) key.channel();
 				int read = 0;
@@ -91,7 +93,7 @@ public class WorkerThread implements Runnable {
 					}
 					buffer.clear();
 					buffer.flip();
-					ComputeHashTask computeHashTask = new ComputeHashTask(payloadBytes);
+					ComputeHashTask computeHashTask = new ComputeHashTask(key, payloadBytes);
 					currentTask = computeHashTask;
 				} catch (IOException e) {
 					// Abnormal termination
@@ -106,8 +108,7 @@ public class WorkerThread implements Runnable {
 					 */
 				}
 				//if (debug) System.out.println(" Switching key interest to WRITE");
-				//key.interestOps(SelectionKey.OP_WRITE);
-				key.attach(null);
+				key.interestOps(SelectionKey.OP_WRITE);
 			}
 		}
 		if (currentTask instanceof ComputeHashTask) {
@@ -120,7 +121,7 @@ public class WorkerThread implements Runnable {
 		}
 		else if (currentTask instanceof ReplyToClientTask) {
 			if (debug) System.out.println("Worker thread " + workerThreadID + " writing data to channel...");
-			SelectionKey key = ((ReplyToClientTask) currentTask).getKey();
+			SelectionKey key = currentTask.getKey();
 			synchronized (key) {
 				SocketChannel clientChannel = (SocketChannel) key.channel();
 				int read = 0;
