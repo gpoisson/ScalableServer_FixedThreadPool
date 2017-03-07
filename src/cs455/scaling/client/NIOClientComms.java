@@ -8,8 +8,10 @@ import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.SocketChannel;
 import java.util.Iterator;
+import java.util.LinkedList;
 
 import cs455.message.HashMessage;
+import cs455.util.HashComputer;
 
 public class NIOClientComms {
 
@@ -18,16 +20,20 @@ public class NIOClientComms {
 	private final int serverPort;
 	private final int messageRate;
 	private final ByteBuffer buffer;
+	private final HashComputer hashComputer;
+	private final LinkedList hashCodes;
 	private Selector selector;
 	private boolean shutDown;
 	private final boolean debug;
 	
-	public NIOClientComms(String serverHostname, int serverPort, int messageRate, boolean debug) throws IOException {
+	public NIOClientComms(String serverHostname, int serverPort, int messageRate, HashComputer hashComputer, LinkedList<String> hashCodes, boolean debug) throws IOException {
 		this.serverHostname = serverHostname;
 		this.serverPort = serverPort;
 		this.messageRate = messageRate;
 		this.shutDown = false;
 		this.buffer = ByteBuffer.allocate(8192);
+		this.hashComputer = hashComputer;
+		this.hashCodes = hashCodes;
 		this.debug = debug;
 		selector = Selector.open();
 		socketChannel = SocketChannel.open();
@@ -41,6 +47,7 @@ public class NIOClientComms {
 		if (debug) System.out.println("Client connected to server: " + socketChannel.getRemoteAddress());
 		while (!shutDown){
 			HashMessage hashMessage = new HashMessage();
+			hashCodes.add(hashComputer.SHA1FromBytes(hashMessage.getPayload()));
 			//String testString = "test string";
 			//buffer.wrap(hashMessage.getPayload());
 			buffer.rewind();
@@ -58,8 +65,18 @@ public class NIOClientComms {
 			buffer.clear();
 			if (debug) System.out.println(" Reading from socket channel to buffer...");
 			socketChannel.read(buffer);
-			String receivedHash = new String(buffer.array());
+			String receivedHash = new String();
+			buffer.rewind();
+			while (buffer.hasRemaining()) {
+				receivedHash += (char) buffer.get();
+			}
 			if (debug) System.out.println(" Client received msg from server: " + receivedHash);
+			if(verifyReceivedHash(receivedHash)){
+				if (debug) System.out.println(" Client verified received hash!");
+			}
+			else{
+				if (debug) System.out.println(" Client failed to verify received hash........");
+			}
 			buffer.clear();
 			long waitTime = (long) (1000.0/messageRate);
 			if (debug) System.out.println(" Client waiting for " + (waitTime/1000) + " seconds...");
@@ -69,9 +86,13 @@ public class NIOClientComms {
 				System.out.println(e);
 			}
 		}
-
 	}
 	
+	private boolean verifyReceivedHash(String receivedHash) {
+		String nextExpectedHash = (String) hashCodes.removeFirst();
+		return (receivedHash.equals(nextExpectedHash));
+	}
+
 	private void connect (SelectionKey key) throws IOException {
 		socketChannel.connect(new InetSocketAddress(serverHostname, serverPort));
 		if (debug) System.out.println("  Client connect() finishing connect; setting interest to WRITE");

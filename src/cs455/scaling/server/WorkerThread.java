@@ -2,13 +2,9 @@ package cs455.scaling.server;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.channels.ClosedChannelException;
 import java.nio.channels.SelectionKey;
-import java.nio.channels.Selector;
-import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.LinkedList;
 
 import cs455.scaling.server.tasks.AcceptIncomingTrafficTask;
@@ -23,7 +19,7 @@ public class WorkerThread implements Runnable {
 	private Task currentTask;
 	private LinkedList<WorkerThread> idleThreads;
 	private int numConnections;
-	private Selector selector;
+	//private Selector selector;
 	private boolean debug;
 	private final int bufferSize;
 	private boolean shutDown;
@@ -41,11 +37,11 @@ public class WorkerThread implements Runnable {
 		this.sleepLock = new Object();
 		this.numConnections = 0;
 
-		try {
+		/*try {
 			this.selector = Selector.open();
 		} catch (IOException e) {
 			System.out.println(e);
-		}
+		}*/
 	}
 	
 	@Override
@@ -54,15 +50,13 @@ public class WorkerThread implements Runnable {
 		while (!shutDown) {
 			if (currentTask != null) {
 				if (debug) System.out.println("  Worker thread " + workerThreadID + " has a task.");
-				processTask();
+				String result = processTask();				// processTask returns a computed hash if task is a read task; null if task is a write task
+				if (result != null) {
+					
+				}
 			}
 			else {
 				reportIdle();
-				
-				//if (debug) System.out.println(" Worker thread " + workerThreadID + " waiting for task.");
-
-				//if (debug) System.out.println(" Worker thread " + workerThreadID + " received task.");
-			
 			}
 			try {
 				Thread.sleep(1000);
@@ -73,7 +67,7 @@ public class WorkerThread implements Runnable {
 		}
 	}
 	
-	private void processTask() {
+	private String processTask() {
 		ByteBuffer buffer = ByteBuffer.allocate(bufferSize);
 		
 		if (currentTask instanceof AcceptIncomingTrafficTask) {
@@ -83,25 +77,17 @@ public class WorkerThread implements Runnable {
 			ArrayList<Byte> payload = new ArrayList<Byte>();
 			synchronized (key) {
 				SocketChannel clientChannel = (SocketChannel) key.channel();
-				//ByteBuffer buffer = ByteBuffer.allocate(bufferSize);
 				int read = 0;
 				key.attach(buffer);
 				try {
 					while (buffer.hasRemaining() && read != -1) {
 						read = clientChannel.read(buffer);
-		                //buffer.flip();
 					}
 					if (debug) System.out.println("...Data read from channel.  read: " + read);
 					buffer.rewind();
-					/*while (buffer.hasRemaining()){
-						if (debug) System.out.print((char) buffer.get());
-					}
-					buffer.rewind();
-					*/
 					while (buffer.hasRemaining()) {
 						payload.add(buffer.get());
 					}
-					if (debug) System.out.println();
 					buffer.clear();
 					buffer.flip();
 					
@@ -113,18 +99,13 @@ public class WorkerThread implements Runnable {
 					currentTask = computeHashTask;
 				} catch (IOException e) {
 					// Abnormal termination
-					
-					/*
-					 *  ADD SERVER DISCONNECT HERE
-					 *  server.disconnect(key);
+					/*  server.disconnect(key);
 					 *  return;
-					 */
+					*/
 				}
 				if (read == -1) {
 					// Connection terminated by client
-					
-					/*
-					 *  server.disconnect(key);
+					/*	server.disconnect(key);
 					 *  return;
 					 */
 				}
@@ -139,6 +120,7 @@ public class WorkerThread implements Runnable {
 			String sha = hashComputer.SHA1FromBytes(((ComputeHashTask) currentTask).getBytes());
 			if (debug) System.out.println("Worker thread " + workerThreadID + " computed hash: " + sha);
 			currentTask = null;
+			return sha;
 		}
 		else if (currentTask instanceof ReplyToClientTask) {
 			if (debug) System.out.println("Worker thread " + workerThreadID + " writing data to channel...");
@@ -182,6 +164,7 @@ public class WorkerThread implements Runnable {
 			currentTask = null;
 			
 		}
+		return null;
 	}
 	
 	// Allows the thread pool manager to monitor for idle worker threads
@@ -220,7 +203,7 @@ public class WorkerThread implements Runnable {
 		return this.workerThreadID;
 	}
 	
-	public synchronized void registerNewSocketChannel(SocketChannel socketChannel) {
+	/*public synchronized void registerNewSocketChannel(SocketChannel socketChannel) {
 		try {
 			if (debug) System.out.println("Worker thread " + workerThreadID + " accepting new socket channel from TPM...");
 			socketChannel.configureBlocking(false);
@@ -229,7 +212,7 @@ public class WorkerThread implements Runnable {
 		} catch (IOException e) {
 			System.out.println(e);
 		}
-	}
+	}*/
 	
 	public synchronized void assignTask(Task newTask) {
 		if (debug) System.out.println("Worker thread " + workerThreadID + " accepting new task...");

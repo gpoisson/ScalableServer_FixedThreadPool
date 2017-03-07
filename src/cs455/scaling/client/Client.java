@@ -41,7 +41,7 @@ public class Client implements Node {
 	
 		//client.comm = new Thread(new ClientComms(client.serverHost, client.serverPort, client.messageRate, debug));
 		//client.comm = new Thread(new NIOClientComms(client.serverHost, client.serverPort, client.messageRate, debug));
-		client.comm = new NIOClientComms(client.serverHost, client.serverPort, client.messageRate, debug);
+		client.comm = new NIOClientComms(client.serverHost, client.serverPort, client.messageRate, client.hashComputer, client.hashCodes, debug);
 		client.comm.startClient();
 	}
 	
