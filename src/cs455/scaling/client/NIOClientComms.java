@@ -47,7 +47,9 @@ public class NIOClientComms {
 		if (debug) System.out.println("Client connected to server: " + socketChannel.getRemoteAddress());
 		while (!shutDown){
 			HashMessage hashMessage = new HashMessage();
-			hashCodes.add(hashComputer.SHA1FromBytes(hashMessage.getPayload()));
+			String sha = hashComputer.SHA1FromBytes(hashMessage.getPayload());
+			if (debug) System.out.println(" Client has new message. Hash: " + sha + " added to hash code queue.");
+			hashCodes.add(sha);
 			//String testString = "test string";
 			//buffer.wrap(hashMessage.getPayload());
 			buffer.rewind();
