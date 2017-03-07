@@ -7,6 +7,7 @@ import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
+import java.nio.charset.Charset;
 import java.util.Iterator;
 
 import cs455.scaling.Node;
@@ -85,8 +86,17 @@ public class Server implements Node {
 			if (debug) System.out.println(" Server selector connected...");
 
 			Iterator keys = server.selector.selectedKeys().iterator();
+			
 			if (debug) System.out.println(" Server selector has new keys...");
+			
 			while (keys.hasNext()) {
+				long waitTime = (long) 1000.0;
+				try {
+					Thread.sleep(waitTime);
+				} catch (InterruptedException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
 				SelectionKey key = (SelectionKey) keys.next();
 				if (key.isAcceptable()) {
 					if (debug) System.out.println(" Connection accepted by server socket channel...");
@@ -126,25 +136,27 @@ public class Server implements Node {
 	
 	private void accept(SelectionKey key) throws IOException {
 		ServerSocketChannel serverSocket = (ServerSocketChannel) key.channel();
-		SocketChannel channel = serverSocket.accept();
+		SocketChannel clientChannel = serverSocket.accept();
 		
 		System.out.println("Accepted incoming connection");
-		channel.configureBlocking(false);
-		channel.register(this.selector, SelectionKey.OP_READ);
+		clientChannel.configureBlocking(false);
+		clientChannel.register(this.selector, SelectionKey.OP_READ);
 		System.out.println("Incoming connection registered with server selector");
 	}
 	
 	private void read(SelectionKey key) throws IOException {
 		System.out.println("Reading data from channel...");
-		SocketChannel channel = (SocketChannel) key.channel();
+		SocketChannel clientChannel = (SocketChannel) key.channel();
 		//ByteBuffer buffer = ByteBuffer.allocate(bufferSize);
 		int read = 0;
 		try {
 			while (buffer.hasRemaining() && read != -1) {
-				read = channel.read(buffer);
-                buffer.flip();
+				read = clientChannel.read(buffer);
+                //buffer.flip();
 			}
 			System.out.println("...Data read from channel.  read: " + read);
+			System.out.println("...Data in buffer: " + buffer.array());
+			buffer.flip();
 		} catch (IOException e) {
 			// Abnormal termination
 			
@@ -173,6 +185,8 @@ public class Server implements Node {
 		 * channel.write(buffer);
 		 * key.interestOps(SelectionKey.OP_READ);
 		 */
+		System.out.println(" Switching key interest to READ");
+		key.interestOps(SelectionKey.OP_READ);
 	}
 	
 	private static String usage() {

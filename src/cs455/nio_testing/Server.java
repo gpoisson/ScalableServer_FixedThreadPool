@@ -22,26 +22,30 @@ public class Server {
         ByteBuffer buffer = ByteBuffer.allocate(256);
  
         while (true) {
+        	System.out.println("Server waiting for selector.select()");
             selector.select();
             Set selectedKeys = selector.selectedKeys();
             Iterator iter = selectedKeys.iterator();
             while (iter.hasNext()) {
- 
+            	System.out.println("Current key available");
                 SelectionKey key = (SelectionKey) iter.next();
  
                 if (key.isAcceptable()) {
+                	System.out.println(" Key acceptable");
                     SocketChannel client = serverSocket.accept();
                     client.configureBlocking(false);
                     client.register(selector, SelectionKey.OP_READ);
                 }
  
                 if (key.isReadable()) {
+                	System.out.println(" Key readable");
                     SocketChannel client = (SocketChannel) key.channel();
                     client.read(buffer);
                     buffer.flip();
                     client.write(buffer);
                     buffer.clear();
                 }
+                System.out.println(" Key removed");
                 iter.remove();
             }
         }

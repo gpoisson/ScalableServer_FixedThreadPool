@@ -9,6 +9,8 @@ import java.nio.channels.Selector;
 import java.nio.channels.SocketChannel;
 import java.util.Iterator;
 
+import cs455.message.HashMessage;
+
 public class NIOClientComms implements Runnable {
 
 	SocketChannel socketChannel;
@@ -25,7 +27,7 @@ public class NIOClientComms implements Runnable {
 		this.serverPort = serverPort;
 		this.messageRate = messageRate;
 		this.shutDown = false;
-		this.buffer = ByteBuffer.allocate(60);
+		this.buffer = ByteBuffer.allocate(11);
 		this.debug = debug;
 		selector = Selector.open();
 		socketChannel = SocketChannel.open();
@@ -47,15 +49,29 @@ public class NIOClientComms implements Runnable {
 		socketChannel.connect(new InetSocketAddress(serverHostname, serverPort));
 		if (debug) System.out.println("Client connected to server: " + socketChannel.getRemoteAddress());
 		while (!shutDown){
+			HashMessage hashMessage = new HashMessage();
+			String testString = "test string";
+			//buffer.wrap(hashMessage.getPayload());
+			buffer.put(testString.getBytes());
+			buffer.rewind();
+			if (debug) System.out.println(" Loaded buffer with data: " + buffer.array().toString());
+			buffer.rewind();
+			if (debug) System.out.println(" Writing from buffer to socket channel...");
 			socketChannel.write(buffer);
+			if (debug) System.out.println(" Clearing buffer.");
 			buffer.clear();
+			if (debug) System.out.println(" Reading from socket channel to buffer...");
 			socketChannel.read(buffer);
 			String receivedHash = new String(buffer.array());
 			if (debug) System.out.println(" Client received msg from server: " + receivedHash);
 			buffer.clear();
-			long waitTime = (long) (1.0/messageRate);
+			long waitTime = (long) (1000.0/messageRate);
 			if (debug) System.out.println(" Client waiting for " + waitTime + " seconds...");
-			
+			try {
+				Thread.sleep(waitTime);
+			} catch (InterruptedException e) {
+				System.out.println(e);
+			}
 		}
 
 	}

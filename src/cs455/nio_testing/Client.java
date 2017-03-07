@@ -34,10 +34,15 @@ public class Client {
     public String sendMessage(String msg) {
         buffer = ByteBuffer.wrap(msg.getBytes());
         String response = null;
+        System.out.println("Client beginning transmissions...");
         try {
+        	System.out.println(" Client writing...");
             client.write(buffer);
+            System.out.println(" Data written to buffer.");
             buffer.clear();
+            System.out.println("  Buffer cleared.");
             client.read(buffer);
+            System.out.println(" Data read from buffer.");
             response = new String(buffer.array()).trim();
             System.out.println("response=" + response);
             buffer.clear();
