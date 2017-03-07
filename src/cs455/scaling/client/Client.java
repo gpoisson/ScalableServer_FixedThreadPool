@@ -1,5 +1,6 @@
 package cs455.scaling.client;
 
+import java.io.IOException;
 import java.util.LinkedList;
 
 import cs455.scaling.Node;
@@ -21,7 +22,7 @@ public class Client implements Node {
 		hashCodes = new LinkedList<String>();
 	}
 	
-	public static void main(String[] args) {
+	public static void main(String[] args) throws IOException {
 		
 		Client client = new Client();
 		
