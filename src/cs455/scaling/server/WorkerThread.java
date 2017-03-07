@@ -15,6 +15,7 @@ import cs455.scaling.server.tasks.AcceptIncomingTrafficTask;
 import cs455.scaling.server.tasks.ComputeHashTask;
 import cs455.scaling.server.tasks.ReplyToClientTask;
 import cs455.scaling.server.tasks.Task;
+import cs455.util.HashComputer;
 
 public class WorkerThread implements Runnable {
 
@@ -24,6 +25,7 @@ public class WorkerThread implements Runnable {
 	private int numConnections;
 	private Selector selector;
 	private boolean debug;
+	private final int bufferSize;
 	private boolean shutDown;
 	private boolean idle;
 	
@@ -35,6 +37,7 @@ public class WorkerThread implements Runnable {
 		this.shutDown = false;
 		this.idleThreads = idleThreads;
 		this.currentTask = null;
+		this.bufferSize = 8192;
 		this.sleepLock = new Object();
 		this.numConnections = 0;
 
@@ -71,7 +74,7 @@ public class WorkerThread implements Runnable {
 	}
 	
 	private void processTask() {
-		ByteBuffer buffer = ByteBuffer.allocate(8192);
+		ByteBuffer buffer = ByteBuffer.allocate(bufferSize);
 		
 		if (currentTask instanceof AcceptIncomingTrafficTask) {
 			if (debug) System.out.println("Worker thread " + workerThreadID + " reading data from channel...");
@@ -82,6 +85,7 @@ public class WorkerThread implements Runnable {
 				SocketChannel clientChannel = (SocketChannel) key.channel();
 				//ByteBuffer buffer = ByteBuffer.allocate(bufferSize);
 				int read = 0;
+				key.attach(buffer);
 				try {
 					while (buffer.hasRemaining() && read != -1) {
 						read = clientChannel.read(buffer);
@@ -126,11 +130,14 @@ public class WorkerThread implements Runnable {
 				}
 				//if (debug) System.out.println(" Switching key interest to WRITE");
 				//key.interestOps(SelectionKey.OP_WRITE);
+				key.attach(null);
 			}
 		}
 		if (currentTask instanceof ComputeHashTask) {
 			if (debug) System.out.println("Worker thread " + workerThreadID + " computing hash of byte array...");
-			
+			HashComputer hashComputer = new HashComputer();
+			String sha = hashComputer.SHA1FromBytes(((ComputeHashTask) currentTask).getBytes());
+			if (debug) System.out.println("Worker thread " + workerThreadID + " computed hash: " + sha);
 			currentTask = null;
 		}
 		else if (currentTask instanceof ReplyToClientTask) {
