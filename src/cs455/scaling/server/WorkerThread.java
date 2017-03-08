@@ -90,10 +90,12 @@ public class WorkerThread implements Runnable {
 				key.attach(buffer);
 				// Read data from channel into buffer
 				try {
-					while (buffer.hasRemaining() && read != -1) {
+					int totalRead = 0;
+					while (buffer.hasRemaining() && read != -1 && totalRead < readBufferSize) {
 						read = clientChannel.read(buffer);
+						totalRead += read;
 					}
-					if (debug) System.out.println("...Data read from channel.  read: " + read + " bytes.");
+					System.out.println("...Data read from channel.  read: " + totalRead + " bytes.");
 					buffer.rewind();
 					
 					// Load data from buffer into byte array
