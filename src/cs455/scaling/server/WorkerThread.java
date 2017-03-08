@@ -50,7 +50,13 @@ public class WorkerThread implements Runnable {
 			if (currentTask != null) {
 				if (debug) System.out.println("  Worker thread " + workerThreadID + " has a task.");
 				SelectionKey key = currentTask.getKey();
-				String result = processTask();				// processTask returns a computed hash if task is a read task; null if task is a write task
+				String result = null;
+				try {
+					result = processTask();				// processTask returns a computed hash if task is a read task; null if task is a write task
+				} catch (NegativeArraySizeException e) {
+					statTracker.decrementConnections();
+					currentTask = null;
+				}
 				if (result != null) {						// If task was a read task, hand the thread pool manager a reply task
 					replyTask = new ReplyToClientTask(key, result);
 					currentTask = null;
