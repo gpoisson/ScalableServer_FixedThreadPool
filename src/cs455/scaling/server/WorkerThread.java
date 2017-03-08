@@ -20,8 +20,7 @@ public class WorkerThread implements Runnable {
 	private LinkedList<WorkerThread> idleThreads;		// Reference to thread pool manager's list of idle threads
 	private ReplyToClientTask replyTask;				// Reply task to be handed back to thread pool manager once read and hash tasks have been completed
 	private boolean debug;								// Debug mode
-	private final int readBufferSize;					
-	private final int writeBufferSize;
+	private final int readBufferSize;					// Size of read buffer
 	private final StatTracker statTracker;				// Reference to server stat tracker
 	private boolean shutDown;							// Shut down switch
 	private boolean idle;								// Idle flag
@@ -35,7 +34,6 @@ public class WorkerThread implements Runnable {
 		this.idleThreads = idleThreads;
 		this.currentTask = null;
 		this.readBufferSize = 8192;
-		this.writeBufferSize = 100;
 		this.replyTask = null;
 		this.statTracker = statTracker;
 		this.sleepLock = new Object();
@@ -90,12 +88,9 @@ public class WorkerThread implements Runnable {
 				key.attach(buffer);
 				// Read data from channel into buffer
 				try {
-					int totalRead = 0;
-					while (buffer.hasRemaining() && read != -1 && totalRead < readBufferSize) {
+					while (buffer.hasRemaining() && read != -1) {
 						read = clientChannel.read(buffer);
-						totalRead += read;
 					}
-					System.out.println("...Data read from channel.  read: " + totalRead + " bytes.");
 					buffer.rewind();
 					
 					// Load data from buffer into byte array
