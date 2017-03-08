@@ -23,7 +23,7 @@ COMMENT
 
 CLASSES=~/Documents/CS455/cs455_pa2/bin
 SCRIPT="cd $CLASSES;
-java -cp . cs455.scaling.client.Client augusta.cs.colostate.edu 56000 > "
+java -cp . cs455.scaling.client.Client augusta.cs.colostate.edu 56000 2 > "
 
 #$1 is the command-line argument
 for ((j=1; j<=$1; j++));
