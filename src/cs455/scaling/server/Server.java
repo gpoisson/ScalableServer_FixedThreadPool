@@ -105,19 +105,25 @@ public class Server implements Node {
 						if (debug) System.out.println(" Connection accepted by server socket channel...");
 						server.accept(key);
 					}
-					if (key.isReadable() && key.attachment() == null) {
-						if (debug) System.out.println(" Channel ready for reading...");
-						AcceptIncomingTrafficTask readTask = new AcceptIncomingTrafficTask(key);
-						if (debug) System.out.println(" Passing new read task to thread pool manager...");
-						server.tpManager.enqueueTask(readTask);
-						key.attach("temp");
+					if (key.isReadable()){
+						if (debug) System.out.println(" Key readable...");
+						if (key.attachment() == null) {
+							if (debug) System.out.println(" Channel ready for reading...");
+							AcceptIncomingTrafficTask readTask = new AcceptIncomingTrafficTask(key);
+							if (debug) System.out.println(" Passing new read task to thread pool manager...");
+							server.tpManager.enqueueTask(readTask);
+							key.attach("temp");
+						}
 					}
-					if (key.isWritable() && key.attachment() == null) {
-						if (debug) System.out.println(" Channel ready for writing...");
-						//ReplyToClientTask writeTask = new ReplyToClientTask(key);
-						//if (debug) System.out.println(" Passing new write task to thread pool manager...");
-						//server.tpManager.enqueueTask(writeTask);
-						key.attach("temp");
+					if (key.isWritable()) {
+						if (debug) System.out.println(" Key writable...");
+						if (key.attachment() == null) {
+							if (debug) System.out.println(" Channel ready for writing...");
+							//ReplyToClientTask writeTask = new ReplyToClientTask(key);
+							//if (debug) System.out.println(" Passing new write task to thread pool manager...");
+							//server.tpManager.enqueueTask(writeTask);
+							key.attach("temp");
+						}
 					}
 				//}
 				keys.remove();

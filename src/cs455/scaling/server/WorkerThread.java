@@ -115,7 +115,7 @@ public class WorkerThread implements Runnable {
 					 */
 				}
 				//if (debug) System.out.println(" Switching key interest to WRITE");
-				key.interestOps(SelectionKey.OP_WRITE);
+				//key.interestOps(SelectionKey.OP_WRITE);
 			}
 		}
 		if (currentTask instanceof ComputeHashTask) {
@@ -141,6 +141,7 @@ public class WorkerThread implements Runnable {
 						read = clientChannel.write(buffer);
 		                //buffer.flip();
 					}
+					currentTask.getKey().attach(null);
 					if (debug) System.out.println("...Data written to channel.  read: " + read);
 					buffer.rewind();
 					while (buffer.hasRemaining()){
@@ -164,9 +165,9 @@ public class WorkerThread implements Runnable {
 				 */
 				//if (debug) System.out.println(" Switching key interest to READ");
 				//key.interestOps(SelectionKey.OP_READ);
+				key.attach(null);
 			}
 			currentTask = null;
-			
 		}
 		return null;
 	}
