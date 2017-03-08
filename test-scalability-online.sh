@@ -21,7 +21,7 @@ How it works:
 - If you want to close Client processes, please refer 'stop-clients.sh' and use it carefully as it kills all java processes.
 COMMENT
 
-CLASSES=.~/Documents/CS455/cs455_pa2/bin
+CLASSES=~/Documents/CS455/cs455_pa2/bin
 SCRIPT="cd $CLASSES;
 java -cp . cs455.scaling.client.Client augusta.cs.colostate.edu 56000 > "
 
