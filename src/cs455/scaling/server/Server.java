@@ -2,40 +2,40 @@ package cs455.scaling.server;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
-import java.nio.ByteBuffer;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
-import java.nio.charset.Charset;
+import java.sql.Timestamp;
+import java.util.Calendar;
 import java.util.Iterator;
 
 import cs455.scaling.Node;
 import cs455.scaling.server.tasks.AcceptIncomingTrafficTask;
-import cs455.scaling.server.tasks.ReplyToClientTask;
+import cs455.util.StatTracker;
 
 public class Server implements Node {
 
-	private final int serverPort;
-	private final int threadPoolSize;
-	private final ThreadPoolManager tpManager;
-	private final Thread tpManagerThread;
-	private final int bufferSize;
-	private Selector selector;
-	private final ByteBuffer buffer;
-	private boolean shutDown;
+	private final int serverPort;					// Port through which clients will connect to server
+	private final int threadPoolSize;				// Fixed size of server thread pool
+	private final ThreadPoolManager tpManager;		// Thread pool manager object
+	private final Thread tpManagerThread;			// Thread pool manager thread
+	private Selector selector;						// Server selector to monitor open channels
+	private StatTracker statTracker;				// Maintain throughput and connection stats
+	private boolean shutDown;						// Shut down switch
 	
 	private Server(int serverPort, int threadPoolSize) {
 		this.serverPort = serverPort;
 		this.threadPoolSize = threadPoolSize;
-		this.tpManager = new ThreadPoolManager(this.threadPoolSize, debug);
+		this.statTracker = new StatTracker();
+		this.tpManager = new ThreadPoolManager(this.threadPoolSize, this.statTracker, debug);
 		this.tpManagerThread = new Thread(this.tpManager);
 		this.shutDown = false;
-		this.buffer = ByteBuffer.allocate(60);
-		this.bufferSize = 60;
 	}
 	
 	public static void main(String[] args) throws IOException {
+		
+		long start = System.nanoTime();
 		
 		// Check arguments
 		if (args.length < 2) {
@@ -43,28 +43,10 @@ public class Server implements Node {
 			System.exit(0);
 		}
 		
+		// Instantiate a server
 		Server server = new Server(Integer.parseInt(args[0]), Integer.parseInt(args[1]));
 		
 		System.out.println("New server initialized.\tPort: " + server.serverPort + "\tThread Pool Size: " + server.threadPoolSize);
-		
-		
-		/*
-		 * TA RECOMMENDS MAKING SERVER LISTENER AN OBJECT IN THE MAIN THREAD,
-		 * NOT SURE IF IT'S TOTALLY NECESSARY 
-		 * 
-		 * OTHER TIPS:
-		 * 1. OP_ACCEPT is needed in server listener to accept conections
-		 * 2. Channels are writable until their send buffers (not BYTE BUFFER) are full (even if key is not set with OP_WRITE)
-		 * 3. Set OP_WRITE - key.isWritable() = true in next iteration
-		 * 4. Immediately after accepting connection and creating a new socket channel, register it with
-		 *    the selector and set OP_READ, since we assume there will be data coming from the client
-		 * 5. After the write is complete, set the interest back to OP_READ
-		 * 6. Be careful using BYTE BUFFER - any operations (read/get/put) advances the pointer
-		 *      Use rewind() before writing to channel -- resets pointer to 0 so that all data is written
-		 *      Use clear() before reading from channel -- empties the current BYTE BUFFER to make room for new data
-		 *      
-		 * 
-		 */
 		
 		// Open selector
 		server.selector = Selector.open();
@@ -78,32 +60,46 @@ public class Server implements Node {
 		if (debug) System.out.println(" Server socket channel opened.\n\tAddress: " + serverSocketChannel.socket().getInetAddress() + "\n\tPort: " + serverSocketChannel.socket().getLocalPort());
 		if (debug) System.out.println(" Server socket channel waiting for incoming connections...");
 		
+		// Execute the thread pool manager thread
 		server.tpManagerThread.start();
 		
 		while (!server.shutDown) {
+			// Print out server statistics every 5 seconds
+			if (System.nanoTime() - start >= (5000000000L)) {
+				Calendar calendar = Calendar.getInstance();
+				Timestamp currentTimestamp = new java.sql.Timestamp(calendar.getTime().getTime());
+				int throughput = (server.statTracker.getThroughput() / 5);
+				System.out.println(currentTimestamp + "\t   Current Server Throughput: " + throughput + " messages/s,\tActive Client Connections: " + server.statTracker.getConnections() + "\tIdle thread count: " + server.tpManager.getIdleThreadCount() + "\tTask queue size: " + server.tpManager.getTaskQueueSize() + "\tTPM alive: " + server.tpManagerThread.isAlive() + "\tWT[1] alive: " + server.tpManager.getWTThreadStatus());
+				start = System.nanoTime();
+				server.statTracker.resetRW();
+			}
+			
 			if (debug) System.out.println(" Server selector waiting for new incoming connections...");
 			
 			server.selector.select();
 			
 			if (debug) System.out.println(" Server selector connected...");
 
-			Iterator keys = server.selector.selectedKeys().iterator();
+			Iterator<SelectionKey> keys = server.selector.selectedKeys().iterator();
 			
 			if (debug) System.out.println(" Server selector has new keys...");
 			
 			while (keys.hasNext()) {
-				int waitTime = 1000;
-				try {
-					Thread.sleep(waitTime);
-				} catch (InterruptedException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
+				if (debug) {
+					int waitTime = 1000;
+					try {
+						Thread.sleep(waitTime);
+					} catch (InterruptedException e) {
+						System.out.println(e);
+					}
 				}
+				
 				SelectionKey key = (SelectionKey) keys.next();
 				//synchronized(key){
 					if (key.isAcceptable()) {
 						if (debug) System.out.println(" Connection accepted by server socket channel...");
 						server.accept(key);
+						server.statTracker.incrementConnections();
 					}
 					if (key.isReadable()){
 						if (debug) System.out.println(" Key readable...");
@@ -122,7 +118,7 @@ public class Server implements Node {
 							//ReplyToClientTask writeTask = new ReplyToClientTask(key);
 							//if (debug) System.out.println(" Passing new write task to thread pool manager...");
 							//server.tpManager.enqueueTask(writeTask);
-							key.attach("temp");
+							//key.attach("temp");
 						}
 					}
 				//}

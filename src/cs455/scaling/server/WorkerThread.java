@@ -4,7 +4,6 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
-import java.util.ArrayList;
 import java.util.LinkedList;
 
 import cs455.scaling.server.tasks.AcceptIncomingTrafficTask;
@@ -12,6 +11,7 @@ import cs455.scaling.server.tasks.ComputeHashTask;
 import cs455.scaling.server.tasks.ReplyToClientTask;
 import cs455.scaling.server.tasks.Task;
 import cs455.util.HashComputer;
+import cs455.util.StatTracker;
 
 public class WorkerThread implements Runnable {
 
@@ -24,20 +24,22 @@ public class WorkerThread implements Runnable {
 	private boolean debug;
 	private final int readBufferSize;
 	private final int writeBufferSize;
+	private final StatTracker statTracker;
 	private boolean shutDown;
 	private boolean idle;
 	
 	public Object sleepLock;
 	
-	public WorkerThread(LinkedList<WorkerThread> idleThreads, int id, boolean debug) {
+	public WorkerThread(LinkedList<WorkerThread> idleThreads, int id, StatTracker statTracker, boolean debug) {
 		this.debug = debug; 
 		this.workerThreadID = id;
 		this.shutDown = false;
 		this.idleThreads = idleThreads;
 		this.currentTask = null;
 		this.readBufferSize = 8192;
-		this.writeBufferSize = 60;
+		this.writeBufferSize = 100;
 		this.replyTask = null;
+		this.statTracker = statTracker;
 		this.sleepLock = new Object();
 		this.numConnections = 0;
 
@@ -66,11 +68,12 @@ public class WorkerThread implements Runnable {
 			else {
 				reportIdle();
 			}
-			try {
-				Thread.sleep(1000);
-			} catch (InterruptedException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
+			if (debug) {
+				try {
+					Thread.sleep(1000);
+				} catch (InterruptedException e) {
+					System.out.println(e);
+				}
 			}
 		}
 	}
@@ -100,6 +103,7 @@ public class WorkerThread implements Runnable {
 					}
 					buffer.clear();
 					buffer.flip();
+					this.statTracker.incrementReads();
 					ComputeHashTask computeHashTask = new ComputeHashTask(key, payloadBytes);
 					currentTask = computeHashTask;
 				} catch (IOException e) {
@@ -107,13 +111,20 @@ public class WorkerThread implements Runnable {
 					/*  server.disconnect(key);
 					 *  return;
 					*/
+					System.out.println(e);
+					System.out.println("Abnormal termination: case A. Removing this key.");
+					key.cancel();
 				}
 				if (read == -1) {
+					statTracker.decrementConnections();
 					// Connection terminated by client
 					/*	server.disconnect(key);
 					 *  return;
 					 */
+					System.out.println("Connection terminated by client. Removing this key.");
+					key.cancel();
 				}
+				buffer.clear();
 				//if (debug) System.out.println(" Switching key interest to WRITE");
 				//key.interestOps(SelectionKey.OP_WRITE);
 			}
@@ -123,6 +134,7 @@ public class WorkerThread implements Runnable {
 			HashComputer hashComputer = new HashComputer();
 			String sha = hashComputer.SHA1FromBytes(((ComputeHashTask) currentTask).getBytes());
 			if (debug) System.out.println("Worker thread " + workerThreadID + " computed hash: " + sha);
+			statTracker.incrementHashes();
 			//currentTask = null;
 			return sha;
 		}
@@ -143,20 +155,27 @@ public class WorkerThread implements Runnable {
 					}
 					currentTask.getKey().attach(null);
 					if (debug) System.out.println("...Data written to channel.  read: " + read);
-					buffer.rewind();
-					while (buffer.hasRemaining()){
-						if (debug) System.out.print((char) buffer.get());
+					
+					if (debug) {
+						while (buffer.hasRemaining()){
+							System.out.print((char) buffer.get());
+						}
 					}
+					buffer.clear();
 					if (debug) System.out.println();
+					statTracker.incrementWrites();
 					buffer.flip();
 				} catch (IOException e) {
 					// Abnormal termination
-					
+					statTracker.decrementConnections();
 					/*
 					 *  ADD SERVER DISCONNECT HERE
 					 *  server.disconnect(key);
 					 *  return;
 					 */
+					System.out.println(e);
+					System.out.println("Abnormal termination: case B. Removing this key.");
+					key.cancel();
 				}
 				// Data stored in 'data' of type: byte[]
 				/*ByteBuffer buffer = ByteBuffer.wrap(data);
@@ -165,7 +184,6 @@ public class WorkerThread implements Runnable {
 				 */
 				//if (debug) System.out.println(" Switching key interest to READ");
 				//key.interestOps(SelectionKey.OP_READ);
-				key.attach(null);
 			}
 			currentTask = null;
 		}
@@ -188,8 +206,7 @@ public class WorkerThread implements Runnable {
 					sleepLock.wait();
 					if (debug) System.out.println("  Worker thread " + workerThreadID + " has been woken up by the thread pool manager.");
 				} catch (InterruptedException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
+					System.out.println(e);
 				}
 			}
 		}

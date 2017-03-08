@@ -1,8 +1,6 @@
 package cs455.scaling.server.tasks;
 
-import java.io.IOException;
 import java.nio.channels.SelectionKey;
-import java.nio.channels.SocketChannel;
 
 public class AcceptIncomingTrafficTask extends Task {
 	
