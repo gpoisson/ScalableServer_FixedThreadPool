@@ -15,20 +15,18 @@ import cs455.util.StatTracker;
 
 public class WorkerThread implements Runnable {
 
-	private final int workerThreadID;
-	private Task currentTask;
-	private LinkedList<WorkerThread> idleThreads;
-	private int numConnections;
-	//private Selector selector;
-	private ReplyToClientTask replyTask;
-	private boolean debug;
-	private final int readBufferSize;
+	private final int workerThreadID;					// Unique ID number used for tracking and debugging
+	private Task currentTask;							// This worker thread's current task, if any
+	private LinkedList<WorkerThread> idleThreads;		// Reference to thread pool manager's list of idle threads
+	private ReplyToClientTask replyTask;				// Reply task to be handed back to thread pool manager once read and hash tasks have been completed
+	private boolean debug;								// Debug mode
+	private final int readBufferSize;					
 	private final int writeBufferSize;
-	private final StatTracker statTracker;
-	private boolean shutDown;
-	private boolean idle;
+	private final StatTracker statTracker;				// Reference to server stat tracker
+	private boolean shutDown;							// Shut down switch
+	private boolean idle;								// Idle flag
 	
-	public Object sleepLock;
+	public final Object sleepLock;
 	
 	public WorkerThread(LinkedList<WorkerThread> idleThreads, int id, StatTracker statTracker, boolean debug) {
 		this.debug = debug; 
@@ -41,32 +39,26 @@ public class WorkerThread implements Runnable {
 		this.replyTask = null;
 		this.statTracker = statTracker;
 		this.sleepLock = new Object();
-		this.numConnections = 0;
-
-		/*try {
-			this.selector = Selector.open();
-		} catch (IOException e) {
-			System.out.println(e);
-		}*/
 	}
 	
 	@Override
 	public void run() {
 		if (debug) System.out.println("  New worker thread " + workerThreadID + " executed.");
+		
 		while (!shutDown) {
+			// If this thread has been given a task, perform the task
 			if (currentTask != null) {
 				if (debug) System.out.println("  Worker thread " + workerThreadID + " has a task.");
 				SelectionKey key = currentTask.getKey();
 				String result = processTask();				// processTask returns a computed hash if task is a read task; null if task is a write task
-				//key.attach(null);
-				if (result != null) {
+				if (result != null) {						// If task was a read task, hand the thread pool manager a reply task
 					replyTask = new ReplyToClientTask(key, result);
 					currentTask = null;
 				}
 				
 			}
 			else {
-				reportIdle();
+				reportIdle();								// If there is no current task, report idle to thread pool manager
 			}
 			if (debug) {
 				try {
@@ -78,9 +70,9 @@ public class WorkerThread implements Runnable {
 		}
 	}
 	
+	// Perform a task if there is one to do
 	private String processTask() {
-		
-		
+		// Read incoming data from client
 		if (currentTask instanceof AcceptIncomingTrafficTask) {
 			ByteBuffer buffer = ByteBuffer.allocate(readBufferSize);
 			if (debug) System.out.println("Worker thread " + workerThreadID + " reading data from channel...");
@@ -90,6 +82,7 @@ public class WorkerThread implements Runnable {
 				SocketChannel clientChannel = (SocketChannel) key.channel();
 				int read = 0;
 				key.attach(buffer);
+				// Read data from channel into buffer
 				try {
 					while (buffer.hasRemaining() && read != -1) {
 						read = clientChannel.read(buffer);
@@ -97,12 +90,15 @@ public class WorkerThread implements Runnable {
 					if (debug) System.out.println("...Data read from channel.  read: " + read + " bytes.");
 					buffer.rewind();
 					
+					// Load data from buffer into byte array
 					byte[] payloadBytes = new byte[read];
 					for (int i = 0; i < read; i++){
 						payloadBytes[i] = buffer.get();
 					}
 					buffer.clear();
-					buffer.flip();
+					buffer = null;
+					
+					// Prepare to compute the hash value for the received payload
 					this.statTracker.incrementReads();
 					ComputeHashTask computeHashTask = new ComputeHashTask(key, payloadBytes);
 					currentTask = computeHashTask;
@@ -124,22 +120,21 @@ public class WorkerThread implements Runnable {
 					System.out.println("Connection terminated by client. Removing this key.");
 					key.cancel();
 				}
-				buffer.clear();
-				//if (debug) System.out.println(" Switching key interest to WRITE");
-				//key.interestOps(SelectionKey.OP_WRITE);
+				//buffer.clear();
 			}
 		}
+		// Compute hash of received payload
 		if (currentTask instanceof ComputeHashTask) {
 			if (debug) System.out.println("Worker thread " + workerThreadID + " computing hash of byte array...");
 			HashComputer hashComputer = new HashComputer();
 			String sha = hashComputer.SHA1FromBytes(((ComputeHashTask) currentTask).getBytes());
 			if (debug) System.out.println("Worker thread " + workerThreadID + " computed hash: " + sha);
 			statTracker.incrementHashes();
-			//currentTask = null;
 			return sha;
 		}
+		// Reply to client with computed hash string
 		else if (currentTask instanceof ReplyToClientTask) {
-			ByteBuffer buffer = ByteBuffer.allocate(writeBufferSize);
+			ByteBuffer buffer = ByteBuffer.allocate(((ReplyToClientTask) currentTask).getReplyHash().getBytes().length);
 			if (debug) System.out.println("Worker thread " + workerThreadID + " writing data to channel...");
 			SelectionKey key = currentTask.getKey();
 			synchronized (key) {
@@ -225,10 +220,6 @@ public class WorkerThread implements Runnable {
 	public boolean isIdle() {
 		if (idle) return true;
 		else return false;
-	}
-	
-	public int getConnectionCount() {
-		return this.numConnections;
 	}
 	
 	public int getId() {

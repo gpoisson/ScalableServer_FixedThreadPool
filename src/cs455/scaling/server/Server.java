@@ -69,7 +69,7 @@ public class Server implements Node {
 				Calendar calendar = Calendar.getInstance();
 				Timestamp currentTimestamp = new java.sql.Timestamp(calendar.getTime().getTime());
 				int throughput = (server.statTracker.getThroughput() / 5);
-				System.out.println(currentTimestamp + "\t   Current Server Throughput: " + throughput + " messages/s,\tActive Client Connections: " + server.statTracker.getConnections() + "\tIdle thread count: " + server.tpManager.getIdleThreadCount() + "\tTask queue size: " + server.tpManager.getTaskQueueSize() + "\tTPM alive: " + server.tpManagerThread.isAlive() + "\tWT[1] alive: " + server.tpManager.getWTThreadStatus());
+				System.out.println(currentTimestamp + "\t   Current Server Throughput: " + throughput + " messages/s,\tActive Client Connections: " + server.statTracker.getConnections() + "\tIdle thread count: " + server.tpManager.getIdleThreadCount() + "\tTask queue size: " + server.tpManager.getTaskQueueSize());
 				start = System.nanoTime();
 				server.statTracker.resetRW();
 			}
@@ -85,6 +85,7 @@ public class Server implements Node {
 			if (debug) System.out.println(" Server selector has new keys...");
 			
 			while (keys.hasNext()) {
+				// In debug mode, server runs very slowly so that debug statements can be read in a useful way
 				if (debug) {
 					int waitTime = 1000;
 					try {
@@ -93,52 +94,49 @@ public class Server implements Node {
 						System.out.println(e);
 					}
 				}
-				
+				// Iterate through available keys to check for incoming data
 				SelectionKey key = (SelectionKey) keys.next();
-				//synchronized(key){
-					if (key.isAcceptable()) {
-						if (debug) System.out.println(" Connection accepted by server socket channel...");
-						server.accept(key);
-						server.statTracker.incrementConnections();
+				if (key.isAcceptable()) {
+					if (debug) System.out.println(" Connection accepted by server socket channel...");
+					server.accept(key);
+					server.statTracker.incrementConnections();
+				}
+				if (key.isReadable()){
+					if (debug) System.out.println(" Key readable...");
+					if (key.attachment() == null) {
+						if (debug) System.out.println(" Channel ready for reading...");
+						AcceptIncomingTrafficTask readTask = new AcceptIncomingTrafficTask(key);
+						if (debug) System.out.println(" Passing new read task to thread pool manager...");
+						server.tpManager.enqueueTask(readTask);
+						key.attach("temp");
 					}
-					if (key.isReadable()){
-						if (debug) System.out.println(" Key readable...");
-						if (key.attachment() == null) {
-							if (debug) System.out.println(" Channel ready for reading...");
-							AcceptIncomingTrafficTask readTask = new AcceptIncomingTrafficTask(key);
-							if (debug) System.out.println(" Passing new read task to thread pool manager...");
-							server.tpManager.enqueueTask(readTask);
-							key.attach("temp");
-						}
+				}
+				if (key.isWritable()) {
+					if (debug) System.out.println(" Key writable...");
+					if (key.attachment() == null) {
+						if (debug) System.out.println(" Channel ready for writing...");
 					}
-					if (key.isWritable()) {
-						if (debug) System.out.println(" Key writable...");
-						if (key.attachment() == null) {
-							if (debug) System.out.println(" Channel ready for writing...");
-							//ReplyToClientTask writeTask = new ReplyToClientTask(key);
-							//if (debug) System.out.println(" Passing new write task to thread pool manager...");
-							//server.tpManager.enqueueTask(writeTask);
-							//key.attach("temp");
-						}
-					}
-				//}
+				}
 				keys.remove();
 			}
 		}
 	}
 	
+	// When a key is acceptable, accept the client channel and register it with server selector for monitoring
 	private void accept(SelectionKey key) throws IOException {
 		ServerSocketChannel serverSocket = (ServerSocketChannel) key.channel();
 		SocketChannel clientChannel = serverSocket.accept();
 		
 		if (debug) System.out.println("Accepted incoming connection");
+		
 		clientChannel.configureBlocking(false);
 		int interests = SelectionKey.OP_READ | SelectionKey.OP_WRITE;
 		clientChannel.register(this.selector, interests);
-		//clientChannel.register(this.selector, SelectionKey.OP_READ);
+		
 		if (debug) System.out.println("Incoming connection registered with server selector");
 	}
 	
+	// Print usage message if incorrect number of arguments are given
 	private static String usage() {
 		return "Usage:  Server <portnum> <thread-pool-size>";
 	}

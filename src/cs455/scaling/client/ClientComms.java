@@ -11,19 +11,20 @@ import cs455.message.HashMessage;
 import cs455.util.HashComputer;
 import cs455.util.StatTracker;
 
-public class NIOClientComms {
+public class ClientComms {
 
-	SocketChannel socketChannel;
-	private final String serverHostname;
-	private final int serverPort;
-	private final int messageRate;
-	private final HashComputer hashComputer;
-	private final LinkedList<String> hashCodes;
-	private final StatTracker statTracker;
-	private boolean shutDown;
-	private final boolean debug;
+	SocketChannel socketChannel;					// Socket channel connected to the server
+	private final String serverHostname;			// Server IP address
+	private final int serverPort;					// Server port number
+	private final int messageRate;					// Number of messages to send per second
+	private final HashComputer hashComputer;		// Object that computes hash codes of byte arrays
+	private final LinkedList<String> hashCodes;		// Queue of hash codes waiting to be received from the server
+	private final StatTracker statTracker;			// Accumulates statistics to be printed to console
+	private ByteBuffer buffer;
+	private boolean shutDown;						// Shut down switch
+	private final boolean debug;					// Debug mode
 	
-	public NIOClientComms(String serverHostname, int serverPort, int messageRate, HashComputer hashComputer, LinkedList<String> hashCodes, boolean debug) throws IOException {
+	public ClientComms(String serverHostname, int serverPort, int messageRate, HashComputer hashComputer, LinkedList<String> hashCodes, boolean debug) throws IOException {
 		this.serverHostname = serverHostname;
 		this.serverPort = serverPort;
 		this.messageRate = messageRate;
@@ -32,18 +33,19 @@ public class NIOClientComms {
 		this.hashCodes = hashCodes;
 		this.statTracker = new StatTracker();
 		this.debug = debug;
-		socketChannel = SocketChannel.open();
 	}
 		
 	public void startClient() throws IOException {
 		if (debug) System.out.println("NIOClientComms starting the client...");
 		long start = System.nanoTime();
-		//SelectionKey key = socketChannel.register(selector, SelectionKey.OP_CONNECT);
-		//connect(key);
+
+		// Configure socket channel for connection to server
+		socketChannel = SocketChannel.open();
 		socketChannel.connect(new InetSocketAddress(serverHostname, serverPort));
 		System.out.println("Client connected to server: " + socketChannel.getRemoteAddress());
+		
 		while (!shutDown){
-			
+			// Print client statistics every 10 seconds
 			if (System.nanoTime() - start >= (10000000000L)) {
 				Calendar calendar = Calendar.getInstance();
 				Timestamp currentTimestamp = new java.sql.Timestamp(calendar.getTime().getTime());
@@ -52,29 +54,29 @@ public class NIOClientComms {
 				statTracker.resetRW();
 			}
 			
-			ByteBuffer buffer = ByteBuffer.allocate(8192);
 			HashMessage hashMessage = new HashMessage();
 			String sha = hashComputer.SHA1FromBytes(hashMessage.getPayload()).trim();
+			
 			statTracker.incrementHashes();
+
 			if (debug) System.out.println(" Client has new message. Hash: " + sha + " added to hash code queue.");
+			
 			hashCodes.add(sha);
-			//String testString = "test string";
-			//buffer.wrap(hashMessage.getPayload());
+
+			// Load message payload into buffer
+			buffer = ByteBuffer.allocate(hashMessage.getPayload().length);
 			buffer.rewind();
 			buffer.put(hashMessage.getPayload());
 			buffer.rewind();
-			//while (buffer.hasRemaining()){
-			//	System.out.print((char) buffer.get());
-			//}
-			//buffer.rewind();
-			//if (debug) System.out.println(" Loaded buffer with data: " + buffer.array().toString());
-			//buffer.rewind();
+			
+			// Write message to socket channel
 			if (debug) System.out.println(" Writing from buffer to socket channel...");
 			socketChannel.write(buffer);
 			statTracker.incrementWrites();
 			if (debug) System.out.println(" Clearing buffer.");
 			buffer.clear();
 			
+			// Read response hash message from server
 			int read = 0;
 			if (debug) System.out.println(" Reading from socket channel to buffer...");
 			read = socketChannel.read(buffer);
@@ -82,6 +84,7 @@ public class NIOClientComms {
 			if (debug) System.out.println("...Data read from channel.  read: " + read + " bytes.");
 			buffer.rewind();
 			
+			// Store response in byte array
 			byte[] receiveHash = new byte[read]; 
 			for (int i = 0; i < read; i++){
 				receiveHash[i] = buffer.get();
@@ -91,9 +94,11 @@ public class NIOClientComms {
 				receivedHashString += (char) b;
 			}
 
+			// Remove unneeded data
 			receiveHash = null;
-			buffer.rewind();
+			buffer = null;
 	
+			// Verify received hash against hash code in hash queue
 			if (debug) System.out.println(" Client received msg from server: " + receivedHashString);
 			if(verifyReceivedHash(receivedHashString)){
 				if (debug) System.out.println(" Client verified received hash!");
@@ -101,7 +106,8 @@ public class NIOClientComms {
 			else{
 				System.out.println(" Client failed to verify received hash.");
 			}
-			buffer.clear();
+
+			// Sleep until time to send next message
 			long waitTime = (long) (1000.0/messageRate);
 			if (debug) System.out.println(" Client waiting for " + (waitTime/1000) + " seconds...");
 			try {
@@ -112,6 +118,7 @@ public class NIOClientComms {
 		}
 	}
 	
+	// Compare a received hash code to the hash code which the client expected to receive
 	private boolean verifyReceivedHash(String receivedHash) {
 		String nextExpectedHash = ((String) hashCodes.removeFirst()).trim();
 		receivedHash = receivedHash.trim();
@@ -122,14 +129,4 @@ public class NIOClientComms {
 			return false;
 		}
 	}
-
-	/*
-	private void connect (SelectionKey key) throws IOException {
-		socketChannel.connect(new InetSocketAddress(serverHostname, serverPort));
-		if (debug) System.out.println("  Client connect() finishing connect; setting interest to WRITE");
-		SocketChannel channel = (SocketChannel) key.channel();
-		channel.finishConnect();
-		key.interestOps(SelectionKey.OP_WRITE);
-	}
-	*/
 }

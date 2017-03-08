@@ -13,9 +13,9 @@ public class ThreadPoolManager implements Runnable {
 	private final Thread[] threadPool;							// References to running worker threads
 	private final LinkedList<Task> taskQueue;					// FIFO task queue
 	private final LinkedList<WorkerThread> idleThreads;			// FIFO queue for idle threads
-	private final StatTracker statTracker;
-	private final boolean debug;
-	private boolean shutDown;
+	private final StatTracker statTracker;						// Reference to server's stat tracker
+	private final boolean debug;								// Debug mode
+	private boolean shutDown;									// Shut down switch
 	
 	// ThreadPoolManager runs on its own thread. It builds and manages
 	//   the thread pool.
@@ -67,10 +67,12 @@ public class ThreadPoolManager implements Runnable {
 		}
 	}
 	
+	// Returns number of idle threads in thread pool
 	public int getIdleThreadCount() {
 		return idleThreads.size();
 	}
 	
+	// returns number of pending tasks in task queue
 	public int getTaskQueueSize() {
 		return taskQueue.size();
 	}
@@ -86,17 +88,20 @@ public class ThreadPoolManager implements Runnable {
 		// Begin monitoring for idle threads
 		if (debug) System.out.println(" Thread pool manager now monitoring for idle worker threads and pending tasks...");
 		while (!shutDown) {
+			
+			// Client runs very slowly in debug mode so that debug statements can be read on the console
 			if (debug) {
 				try {
 					Thread.sleep(1000);
 				} catch (InterruptedException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
+					System.out.println(e);
 				}
 			}
+			
 			if (debug) System.out.println("  Thread pool manager --  Task Queue: " + taskQueue.size() + "   Idle Threads: " + idleThreads.size());
+			
 			if (idleThreads.size() > 0) {
-				// Check for ready reply tasks
+				// Check for worker threads for ready reply tasks
 				synchronized(idleThreads) {
 					for (WorkerThread idle: idleThreads) {
 						ReplyToClientTask newReply = idle.extractPendingReplyTask();
@@ -109,13 +114,13 @@ public class ThreadPoolManager implements Runnable {
 						}
 					}
 				}
+				// Attempt to pair pending tasks with waiting threads
 				if (taskQueue.size() > 0) {
 					if (debug) System.out.println("  Thread pool manager detects idle threads and pending tasks.");
 					WorkerThread idleThread = retrieveIdleThread();
 					synchronized(idleThread) {
 						synchronized(taskQueue) {
 							if (debug) System.out.println(" Matching retrieved idle thread with a pending task.");
-							//synchronized (taskQueue) {
 							idleThread.assignTask(taskQueue.removeFirst());
 							synchronized(idleThread.sleepLock) {
 								idleThread.sleepLock.notify();
@@ -127,9 +132,4 @@ public class ThreadPoolManager implements Runnable {
 			}
 		}
 	}
-
-	public boolean getWTThreadStatus() {
-		return threadPool[1].isAlive();
-	}
-
 }
