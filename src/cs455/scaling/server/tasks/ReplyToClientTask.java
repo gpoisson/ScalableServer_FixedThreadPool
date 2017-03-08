@@ -2,6 +2,7 @@ package cs455.scaling.server.tasks;
 
 import java.nio.channels.SelectionKey;
 
+// Task created when a hash is ready to be returned to the client
 public class ReplyToClientTask extends Task {
 	
 	private SelectionKey key;

@@ -104,7 +104,7 @@ public class ClientComms {
 				if (debug) System.out.println(" Client verified received hash!");
 			}
 			else{
-				System.out.println(" Client failed to verify received hash.");
+				if (debug) System.out.println(" Client failed to verify received hash.");
 			}
 
 			// Sleep until time to send next message
@@ -124,8 +124,8 @@ public class ClientComms {
 		receivedHash = receivedHash.trim();
 		if (receivedHash.equals(nextExpectedHash)) return true;
 		else {
-			System.out.println(" Expected hash: " + nextExpectedHash);
-			System.out.println(" Received hash: " + receivedHash);
+			if (debug) System.out.println(" Expected hash: " + nextExpectedHash);
+			if (debug) System.out.println(" Received hash: " + receivedHash);
 			return false;
 		}
 	}

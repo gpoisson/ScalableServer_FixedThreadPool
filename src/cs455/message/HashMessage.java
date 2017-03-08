@@ -2,6 +2,7 @@ package cs455.message;
 
 import java.util.Random;
 
+// Hash message object produced by Clients 
 public class HashMessage {
 	
 	private byte[] payload;
@@ -20,6 +21,7 @@ public class HashMessage {
 		return copyOfPayload;
 	}
 	
+	// Generate new random payload
 	public void generateNewPayload() {
 		new Random().nextBytes(payload);
 	}

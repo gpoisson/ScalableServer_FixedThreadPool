@@ -1,5 +1,6 @@
 package cs455.util;
 
+// Simple collection of integers that gets passed around the system and adjusted according to data flow
 public class StatTracker {
 	
 	private int reads;
