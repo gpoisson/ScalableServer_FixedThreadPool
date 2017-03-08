@@ -69,7 +69,7 @@ public class Server implements Node {
 				Calendar calendar = Calendar.getInstance();
 				Timestamp currentTimestamp = new java.sql.Timestamp(calendar.getTime().getTime());
 				int throughput = (server.statTracker.getThroughput() / 5);
-				System.out.println(currentTimestamp + "\t   Current Server Throughput: " + throughput + " messages/s,\tActive Client Connections: " + server.statTracker.getConnections() + "\tIdle thread count: " + server.tpManager.getIdleThreadCount() + "\tTask queue size: " + server.tpManager.getTaskQueueSize());
+				System.out.println(currentTimestamp + "\t   Current Server Throughput: " + throughput + " messages/s,\tActive Client Connections: " + server.statTracker.getConnections()); // + "\tIdle thread count: " + server.tpManager.getIdleThreadCount() + "\tTask queue size: " + server.tpManager.getTaskQueueSize());
 				start = System.nanoTime();
 				server.statTracker.resetRW();
 			}
