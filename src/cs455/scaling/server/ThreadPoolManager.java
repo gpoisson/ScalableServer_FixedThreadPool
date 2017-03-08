@@ -8,6 +8,7 @@ import java.util.LinkedList;
 
 import cs455.scaling.server.WorkerThread;
 import cs455.scaling.server.tasks.ComputeHashTask;
+import cs455.scaling.server.tasks.ReplyToClientTask;
 import cs455.scaling.server.tasks.Task;
 
 public class ThreadPoolManager implements Runnable {
@@ -86,18 +87,33 @@ public class ThreadPoolManager implements Runnable {
 				e.printStackTrace();
 			}
 			if (debug) System.out.println("  Thread pool manager --  Task Queue: " + taskQueue.size() + "   Idle Threads: " + idleThreads.size());
-			if ((idleThreads.size() > 0) && (taskQueue.size() > 0)) {
-				if (debug) System.out.println("  Thread pool manager detects idle threads and pending tasks.");
-				WorkerThread idleThread = retrieveIdleThread();
-				synchronized(idleThread) {
-					if (debug) System.out.println(" Matching retrieved idle thread with a pending task.");
-					//synchronized (taskQueue) {
-					idleThread.assignTask(taskQueue.removeFirst());
-					synchronized(idleThread.sleepLock) {
-						idleThread.sleepLock.notify();
+			if (idleThreads.size() > 0) {
+				// Check for ready reply tasks
+				synchronized(idleThreads) {
+					for (WorkerThread idle: idleThreads) {
+						ReplyToClientTask newReply = idle.extractPendingReplyTask();
+						if (newReply != null) {
+							if (debug) System.out.println("New reply task detected by thread pool manager. Adding to task queue...");
+							synchronized(taskQueue){
+								taskQueue.add(newReply);
+							}
+							if (debug) System.out.println("Task queue size is now: " + taskQueue.size());
+						}
 					}
-					if (debug) System.out.println(" Thread and task matched. Task queue size is now: " + taskQueue.size());
-					//}
+				}
+				if (taskQueue.size() > 0) {
+					if (debug) System.out.println("  Thread pool manager detects idle threads and pending tasks.");
+					WorkerThread idleThread = retrieveIdleThread();
+					synchronized(idleThread) {
+						if (debug) System.out.println(" Matching retrieved idle thread with a pending task.");
+						//synchronized (taskQueue) {
+						idleThread.assignTask(taskQueue.removeFirst());
+						synchronized(idleThread.sleepLock) {
+							idleThread.sleepLock.notify();
+						}
+						if (debug) System.out.println(" Thread and task matched. Task queue size is now: " + taskQueue.size());
+						//}
+					}
 				}
 			}
 		}

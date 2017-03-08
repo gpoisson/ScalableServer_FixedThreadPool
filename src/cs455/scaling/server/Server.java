@@ -114,9 +114,9 @@ public class Server implements Node {
 					}
 					if (key.isWritable() && key.attachment() == null) {
 						if (debug) System.out.println(" Channel ready for writing...");
-						ReplyToClientTask writeTask = new ReplyToClientTask(key);
-						if (debug) System.out.println(" Passing new write task to thread pool manager...");
-						server.tpManager.enqueueTask(writeTask);
+						//ReplyToClientTask writeTask = new ReplyToClientTask(key);
+						//if (debug) System.out.println(" Passing new write task to thread pool manager...");
+						//server.tpManager.enqueueTask(writeTask);
 						key.attach("temp");
 					}
 				//}
@@ -131,9 +131,9 @@ public class Server implements Node {
 		
 		if (debug) System.out.println("Accepted incoming connection");
 		clientChannel.configureBlocking(false);
-		//int interests = SelectionKey.OP_READ | SelectionKey.OP_WRITE;
-		//clientChannel.register(this.selector, interests);
-		clientChannel.register(this.selector, SelectionKey.OP_READ);
+		int interests = SelectionKey.OP_READ | SelectionKey.OP_WRITE;
+		clientChannel.register(this.selector, interests);
+		//clientChannel.register(this.selector, SelectionKey.OP_READ);
 		if (debug) System.out.println("Incoming connection registered with server selector");
 	}
 	

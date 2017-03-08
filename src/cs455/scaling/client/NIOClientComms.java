@@ -19,7 +19,6 @@ public class NIOClientComms {
 	private final String serverHostname;
 	private final int serverPort;
 	private final int messageRate;
-	private final ByteBuffer buffer;
 	private final HashComputer hashComputer;
 	private final LinkedList hashCodes;
 	private Selector selector;
@@ -31,7 +30,6 @@ public class NIOClientComms {
 		this.serverPort = serverPort;
 		this.messageRate = messageRate;
 		this.shutDown = false;
-		this.buffer = ByteBuffer.allocate(8192);
 		this.hashComputer = hashComputer;
 		this.hashCodes = hashCodes;
 		this.debug = debug;
@@ -46,8 +44,9 @@ public class NIOClientComms {
 		socketChannel.connect(new InetSocketAddress(serverHostname, serverPort));
 		if (debug) System.out.println("Client connected to server: " + socketChannel.getRemoteAddress());
 		while (!shutDown){
+			ByteBuffer buffer = ByteBuffer.allocate(8192);
 			HashMessage hashMessage = new HashMessage();
-			String sha = hashComputer.SHA1FromBytes(hashMessage.getPayload());
+			String sha = hashComputer.SHA1FromBytes(hashMessage.getPayload()).trim();
 			if (debug) System.out.println(" Client has new message. Hash: " + sha + " added to hash code queue.");
 			hashCodes.add(sha);
 			//String testString = "test string";
@@ -65,15 +64,25 @@ public class NIOClientComms {
 			socketChannel.write(buffer);
 			if (debug) System.out.println(" Clearing buffer.");
 			buffer.clear();
+			
+			int read = 0;
 			if (debug) System.out.println(" Reading from socket channel to buffer...");
-			socketChannel.read(buffer);
-			String receivedHash = new String();
+			read = socketChannel.read(buffer);
+			if (debug) System.out.println("...Data read from channel.  read: " + read + " bytes.");
 			buffer.rewind();
-			while (buffer.hasRemaining()) {
-				receivedHash += (char) buffer.get();
+			
+			byte[] receiveHash = new byte[read]; 
+			for (int i = 0; i < read; i++){
+				receiveHash[i] = buffer.get();
 			}
-			if (debug) System.out.println(" Client received msg from server: " + receivedHash);
-			if(verifyReceivedHash(receivedHash)){
+			String receivedHashString = new String();
+			for (byte b: receiveHash){
+				receivedHashString += (char) b;
+			}
+			buffer.rewind();
+	
+			if (debug) System.out.println(" Client received msg from server: " + receivedHashString);
+			if(verifyReceivedHash(receivedHashString)){
 				if (debug) System.out.println(" Client verified received hash!");
 			}
 			else{
@@ -91,7 +100,8 @@ public class NIOClientComms {
 	}
 	
 	private boolean verifyReceivedHash(String receivedHash) {
-		String nextExpectedHash = (String) hashCodes.removeFirst();
+		String nextExpectedHash = ((String) hashCodes.removeFirst()).trim();
+		receivedHash = receivedHash.trim();
 		return (receivedHash.equals(nextExpectedHash));
 	}
 

@@ -20,8 +20,10 @@ public class WorkerThread implements Runnable {
 	private LinkedList<WorkerThread> idleThreads;
 	private int numConnections;
 	//private Selector selector;
+	private ReplyToClientTask replyTask;
 	private boolean debug;
-	private final int bufferSize;
+	private final int readBufferSize;
+	private final int writeBufferSize;
 	private boolean shutDown;
 	private boolean idle;
 	
@@ -33,7 +35,9 @@ public class WorkerThread implements Runnable {
 		this.shutDown = false;
 		this.idleThreads = idleThreads;
 		this.currentTask = null;
-		this.bufferSize = 8192;
+		this.readBufferSize = 8192;
+		this.writeBufferSize = 60;
+		this.replyTask = null;
 		this.sleepLock = new Object();
 		this.numConnections = 0;
 
@@ -50,12 +54,14 @@ public class WorkerThread implements Runnable {
 		while (!shutDown) {
 			if (currentTask != null) {
 				if (debug) System.out.println("  Worker thread " + workerThreadID + " has a task.");
+				SelectionKey key = currentTask.getKey();
 				String result = processTask();				// processTask returns a computed hash if task is a read task; null if task is a write task
+				//key.attach(null);
 				if (result != null) {
-					
-					SelectionKey key = currentTask.getKey();
-					key.attach(null);
+					replyTask = new ReplyToClientTask(key, result);
+					currentTask = null;
 				}
+				
 			}
 			else {
 				reportIdle();
@@ -70,9 +76,10 @@ public class WorkerThread implements Runnable {
 	}
 	
 	private String processTask() {
-		ByteBuffer buffer = ByteBuffer.allocate(bufferSize);
+		
 		
 		if (currentTask instanceof AcceptIncomingTrafficTask) {
+			ByteBuffer buffer = ByteBuffer.allocate(readBufferSize);
 			if (debug) System.out.println("Worker thread " + workerThreadID + " reading data from channel...");
 			
 			SelectionKey key = currentTask.getKey();
@@ -116,18 +123,18 @@ public class WorkerThread implements Runnable {
 			HashComputer hashComputer = new HashComputer();
 			String sha = hashComputer.SHA1FromBytes(((ComputeHashTask) currentTask).getBytes());
 			if (debug) System.out.println("Worker thread " + workerThreadID + " computed hash: " + sha);
-			currentTask = null;
+			//currentTask = null;
 			return sha;
 		}
 		else if (currentTask instanceof ReplyToClientTask) {
+			ByteBuffer buffer = ByteBuffer.allocate(writeBufferSize);
 			if (debug) System.out.println("Worker thread " + workerThreadID + " writing data to channel...");
 			SelectionKey key = currentTask.getKey();
 			synchronized (key) {
 				SocketChannel clientChannel = (SocketChannel) key.channel();
 				int read = 0;
 				buffer.rewind();
-				String testResponse = "test response";
-				buffer.put(testResponse.getBytes());
+				buffer.put(((ReplyToClientTask) currentTask).getReplyHash().getBytes());
 				buffer.rewind();
 				try {
 					while (buffer.hasRemaining() && read != -1) {
@@ -185,6 +192,16 @@ public class WorkerThread implements Runnable {
 				}
 			}
 		}
+	}
+	
+	public ReplyToClientTask extractPendingReplyTask() {
+		ReplyToClientTask newTask = new ReplyToClientTask(null, null);
+		if (replyTask == null) return null;
+		synchronized(replyTask) {
+			newTask = replyTask;
+		}
+		replyTask = null;
+		return newTask;
 	}
 	
 	public boolean isIdle() {
