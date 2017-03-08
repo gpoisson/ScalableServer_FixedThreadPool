@@ -23,7 +23,7 @@ COMMENT
 
 CLASSES=<project_root_directory>
 SCRIPT="cd $CLASSES;
-java -cp . cs455.scaling.client.Client [server-host] [server-listening-port] > "
+java -cp . cs455.scaling.client.Client augusta.cs.colostate.edu 56000 > "
 
 #$1 is the command-line argument
 for ((j=1; j<=$1; j++));
@@ -31,7 +31,7 @@ do
 	for i in `cat machine_list`
 	do
 		echo 'logging into '$i
-		FOLDER="/tmp/$USER/cs455/HW2-PC"
+		FOLDER="~/Documents/CS455/cs455_pa2/logs.txt"
 		FILE="$FOLDER/$j"
 		ssh $i "mkdir -p $FOLDER;touch $FILE;$SCRIPT$FILE &"
 	done
