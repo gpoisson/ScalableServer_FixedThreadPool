@@ -22,6 +22,7 @@ public class WorkerThread implements Runnable {
 	public Object sleepLock;
 	private Task currentTask;
 	private LinkedList<Task> taskQueue;
+	public long taskTime;
 
 	public WorkerThread(LinkedList<WorkerThread> idleThreads, LinkedList<Task> taskQueue, int id, StatTracker statTracker, boolean debug) {
 		this.workerThreadID = id;
@@ -32,6 +33,7 @@ public class WorkerThread implements Runnable {
 		this.sleepLock = new Object();
 		this.currentTask = null;
 		this.taskQueue = taskQueue;
+		this.taskTime = 0;
 	}
 
 	@Override
@@ -56,6 +58,7 @@ public class WorkerThread implements Runnable {
 	private void performTask(){
 		if (debug) System.out.println(" Worker thread " + workerThreadID + " performing task...");
 		synchronized (currentTask){
+			taskTime = System.nanoTime();
 			SelectionKey key = currentTask.getKey();
 			if (currentTask instanceof AcceptIncomingTrafficTask){
 				try {
