@@ -69,7 +69,7 @@ public class Server implements Node {
 			if (System.nanoTime() - start >= (5000000000L)) {
 				Calendar calendar = Calendar.getInstance();
 				Timestamp currentTimestamp = new java.sql.Timestamp(calendar.getTime().getTime());
-				int throughput = (server.statTracker.getThroughput() / 5) + 1;
+				int throughput = (server.statTracker.getThroughput() / 5);
 				System.out.println(currentTimestamp + "\t   Current Server Throughput: " + throughput + " messages/s,\tActive Client Connections: " + server.statTracker.getConnections() + "\tIdle thread count: " + server.tpManager.idleThreadCount + "\tTask queue size: " + server.tpManager.pendingTaskCount);
 				start = System.nanoTime();
 				server.statTracker.resetRW();

@@ -70,9 +70,7 @@ public class WorkerThread implements Runnable {
 					System.out.println(e);
 				} finally {
 					key.attach(null);
-					synchronized(statTracker) {
-						statTracker.incrementReads();
-					}
+					
 				}
 			}
 			else if (currentTask instanceof ComputeHashTask){
@@ -89,9 +87,6 @@ public class WorkerThread implements Runnable {
 					System.out.println(e);
 				} finally {
 					key.attach(null);
-					synchronized(statTracker) {
-						statTracker.incrementWrites();
-					}
 				}
 			}
 		}
@@ -140,6 +135,9 @@ public class WorkerThread implements Runnable {
 		if (debug) System.out.println("Hashed " + data.length + " bytes: " + hashCode);
 		ReplyToClientTask replyTask = new ReplyToClientTask(currentTask.getKey(), hashCode);
 		currentTask = null;
+		synchronized(statTracker){
+			statTracker.incrementReads();
+		}
 		return replyTask;
 	}
 	
@@ -166,6 +164,9 @@ public class WorkerThread implements Runnable {
 				statTracker.decrementConnections();
 			}
 			currentTask = null;
+		}
+		synchronized(statTracker){
+			statTracker.incrementWrites();
 		}
 		currentTask = null;
 	}
