@@ -107,7 +107,7 @@ public class Server implements Node {
 				if (key.isWritable()) {
 					//if (debug) System.out.println(" Key writable...");
 					synchronized(key){
-						server.checkComm(key);
+						//server.checkComm(key);
 					}
 					if (key.attachment() == null) {
 						//if (debug) System.out.println(" Channel ready for writing...");
