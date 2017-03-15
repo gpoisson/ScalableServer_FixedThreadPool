@@ -107,7 +107,7 @@ public class Server implements Node {
 				if (key.isWritable()) {
 					//if (debug) System.out.println(" Key writable...");
 					synchronized(key){
-						//server.checkComm(key);
+						server.checkComm(key);
 					}
 					if (key.attachment() == null) {
 						//if (debug) System.out.println(" Channel ready for writing...");
@@ -145,7 +145,7 @@ public class Server implements Node {
 					if (System.nanoTime() - (long) key.attachment() > 2000000000L){
 						if (debug) System.out.println("Hang detected");
 						//tpManager.enqueueTask(new ReplyToClientTask(key, (String) key.attachment()));
-						tpManager.enqueueTask(new AcceptIncomingTrafficTask(key));
+						//tpManager.enqueueTask(new AcceptIncomingTrafficTask(key));
 						key.attach(null);
 					}
 				} catch (Exception e) {	

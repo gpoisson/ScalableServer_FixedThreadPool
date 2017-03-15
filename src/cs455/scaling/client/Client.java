@@ -56,8 +56,7 @@ public class Client implements Node {
 					client.comm.statTracker.setTime(System.nanoTime());
 				}
 			}
-		}
-		*/
+		}*/
 	}
 	
 	// Print usage message if wrong number of arguments is given
