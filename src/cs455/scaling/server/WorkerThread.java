@@ -22,7 +22,6 @@ public class WorkerThread implements Runnable {
 	public Object sleepLock;
 	private Task currentTask;
 	private LinkedList<Task> taskQueue;
-	private boolean idle;
 
 	public WorkerThread(LinkedList<WorkerThread> idleThreads, LinkedList<Task> taskQueue, int id, StatTracker statTracker, boolean debug) {
 		this.workerThreadID = id;
@@ -33,7 +32,6 @@ public class WorkerThread implements Runnable {
 		this.sleepLock = new Object();
 		this.currentTask = null;
 		this.taskQueue = taskQueue;
-		this.idle = false;
 		//System.out.println("Worker Thread " + id + " constructed.");
 	}
 
@@ -48,16 +46,6 @@ public class WorkerThread implements Runnable {
 			else {
 				if (debug) System.out.println("  Worker thread " + workerThreadID + " has a new task");
 				performTask();
-			}
-			if (idle){
-				synchronized(this){
-					try {
-						this.wait();
-					} catch (InterruptedException e) {
-						System.out.println(e);
-					}
-				}
-				idle = false;
 			}
 		}
 		
@@ -170,7 +158,13 @@ public class WorkerThread implements Runnable {
 		synchronized(idleThreads){
 			idleThreads.add(this);
 		}
-		idle = true;
+		try {
+			synchronized(this){
+				this.wait();
+			}
+		} catch (InterruptedException e) {
+			System.out.println(e);
+		}
 	}
 
 }
