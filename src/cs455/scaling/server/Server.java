@@ -12,6 +12,7 @@ import java.util.Iterator;
 
 import cs455.scaling.Node;
 import cs455.scaling.server.tasks.AcceptIncomingTrafficTask;
+import cs455.scaling.server.tasks.ReplyToClientTask;
 import cs455.util.StatTracker;
 
 public class Server implements Node {
@@ -105,9 +106,9 @@ public class Server implements Node {
 				}
 				if (key.isWritable()) {
 					//if (debug) System.out.println(" Key writable...");
-					/*synchronized(key){
+					synchronized(key){
 						server.checkComm(key);
-					}*/
+					}
 					if (key.attachment() == null) {
 						//if (debug) System.out.println(" Channel ready for writing...");
 					}
@@ -138,11 +139,13 @@ public class Server implements Node {
 	}
 	
 	private void checkComm(SelectionKey key){
-		synchronized(key){
+		synchronized(statTracker){
 			if (key.attachment() != null){
 				try{
-					if (System.nanoTime() - (long) key.attachment() > 4000000000L){
+					if (System.nanoTime() - (long) key.attachment() > 2000000000L){
 						if (debug) System.out.println("Hang detected");
+						//tpManager.enqueueTask(new ReplyToClientTask(key, (String) key.attachment()));
+						tpManager.enqueueTask(new AcceptIncomingTrafficTask(key));
 						key.attach(null);
 					}
 				} catch (Exception e) {	

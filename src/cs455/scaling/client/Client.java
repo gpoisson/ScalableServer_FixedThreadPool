@@ -16,6 +16,7 @@ public class Client implements Node {
 	private LinkedList<String> hashCodes;			// A queue of hash codes for messages sent by the client
 	
 	private ClientComms comm;						// Client communications thread
+	private Thread commThread;
 	
 	private Client () {
 		hashComputer = new HashComputer();
@@ -41,7 +42,22 @@ public class Client implements Node {
 	
 		// Create a ClientComms object and begin communicating with the server
 		client.comm = new ClientComms(client.serverHost, client.serverPort, client.messageRate, client.hashComputer, client.hashCodes, debug);
-		client.comm.startClient();
+		client.commThread = new Thread(client.comm);
+		client.commThread.start();
+		
+		/*
+		while (true){
+			synchronized(client.comm.statTracker){
+				if (System.nanoTime() - client.comm.statTracker.getTime() > 3000000000L){
+					if (debug) System.out.println("Hang detected: " + (System.nanoTime() - client.comm.statTracker.getTime()));
+					client.comm = new ClientComms(client.serverHost, client.serverPort, client.messageRate, client.hashComputer, client.hashCodes, debug);
+					client.commThread = new Thread(client.comm);
+					client.commThread.start();
+					client.comm.statTracker.setTime(System.nanoTime());
+				}
+			}
+		}
+		*/
 	}
 	
 	// Print usage message if wrong number of arguments is given

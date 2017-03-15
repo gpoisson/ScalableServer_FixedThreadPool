@@ -136,7 +136,6 @@ public class WorkerThread implements Runnable {
 		ByteBuffer buffer = ByteBuffer.allocate(40);
 		if (debug) System.out.println("  Replying with hash: " + ((ReplyToClientTask) currentTask).getReplyHash());
 		SelectionKey key = currentTask.getKey();
-		key.attach(System.nanoTime());
 		byte[] data = new byte[40];
 		data = ((ReplyToClientTask) currentTask).getReplyHash().getBytes();
 		buffer.put(data);
@@ -148,6 +147,8 @@ public class WorkerThread implements Runnable {
 			while (buffer.hasRemaining() && read != -1){
 				read = socketChannel.write(buffer);
 			}
+			String replymsg = (String) ((ReplyToClientTask) currentTask).getReplyHash();
+			key.attach(replymsg);
 		} catch (NegativeArraySizeException e) {
 			statTracker.decrementConnections();
 			currentTask = null;

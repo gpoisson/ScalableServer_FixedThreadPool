@@ -11,7 +11,7 @@ import cs455.message.HashMessage;
 import cs455.util.HashComputer;
 import cs455.util.StatTracker;
 
-public class ClientComms {
+public class ClientComms implements Runnable {
 
 	SocketChannel socketChannel;					// Socket channel connected to the server
 	private final String serverHostname;			// Server IP address
@@ -19,7 +19,7 @@ public class ClientComms {
 	private final int messageRate;					// Number of messages to send per second
 	private final HashComputer hashComputer;		// Object that computes hash codes of byte arrays
 	private final LinkedList<String> hashCodes;		// Queue of hash codes waiting to be received from the server
-	private final StatTracker statTracker;			// Accumulates statistics to be printed to console
+	final StatTracker statTracker;			// Accumulates statistics to be printed to console
 	private boolean shutDown;						// Shut down switch
 	private final boolean debug;					// Debug mode
 	
@@ -72,14 +72,19 @@ public class ClientComms {
 			while (buffer.hasRemaining() && read != -1){
 				read = socketChannel.write(buffer);
 			}
+
 			statTracker.incrementWrites();
+			statTracker.setTime(System.nanoTime());
 			
 			buffer.clear();
 			buffer = ByteBuffer.allocate(40);
 			
 			// Read server response
 			read = 0;
-			read = socketChannel.read(buffer);
+			while (buffer.hasRemaining() && read != -1){
+				read = socketChannel.read(buffer);
+			}
+			statTracker.setTime(System.nanoTime());
 			
 			buffer.rewind();
 			
@@ -118,5 +123,15 @@ public class ClientComms {
 			System.out.println(" Received hash: " + receivedHash);
 			return false;
 		}
+	}
+
+	@Override
+	public void run() {
+		try {
+			startClient();
+		} catch (IOException e) {
+			System.out.println(e);
+		}
+		
 	}
 }
