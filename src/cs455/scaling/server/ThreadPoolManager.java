@@ -1,7 +1,5 @@
 package cs455.scaling.server;
 
-import java.sql.Timestamp;
-import java.util.Calendar;
 import java.util.LinkedList;
 
 import cs455.scaling.server.tasks.Task;
@@ -53,8 +51,6 @@ public class ThreadPoolManager implements Runnable {
 	private long printTPMdebug(long start, boolean print){
 		// Print TPM statistics every 5 seconds
 		if (System.nanoTime() - start >= (5000000000L)) {
-			Calendar calendar = Calendar.getInstance();
-			Timestamp currentTimestamp = new java.sql.Timestamp(calendar.getTime().getTime());
 			if (print) System.out.println("TPM has " + idleThreads.size() + " idle threads, " + taskQueue.size() + " pending tasks.");
 			start = System.nanoTime();
 			statTracker.resetRW();

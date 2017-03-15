@@ -20,7 +20,6 @@ public class ClientComms {
 	private final HashComputer hashComputer;		// Object that computes hash codes of byte arrays
 	private final LinkedList<String> hashCodes;		// Queue of hash codes waiting to be received from the server
 	private final StatTracker statTracker;			// Accumulates statistics to be printed to console
-	private ByteBuffer buffer;
 	private boolean shutDown;						// Shut down switch
 	private final boolean debug;					// Debug mode
 	

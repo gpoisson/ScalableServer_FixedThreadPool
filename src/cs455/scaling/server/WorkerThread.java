@@ -17,9 +17,8 @@ public class WorkerThread implements Runnable {
 	private int workerThreadID;
 	private StatTracker statTracker;
 	private boolean debug;
-	private LinkedList idleThreads;
+	private LinkedList<WorkerThread> idleThreads;
 	private boolean shutDown;
-	private boolean idle;
 	public Object sleepLock;
 	private Task currentTask;
 	private LinkedList<Task> taskQueue;
@@ -30,7 +29,6 @@ public class WorkerThread implements Runnable {
 		this.debug = debug;
 		this.idleThreads = idleThreads;
 		this.shutDown = false;
-		this.idle = false;
 		this.sleepLock = new Object();
 		this.currentTask = null;
 		this.taskQueue = taskQueue;
@@ -138,7 +136,6 @@ public class WorkerThread implements Runnable {
 	
 	private void reportIdle(){
 		if (debug) System.out.println("Worker thread " + workerThreadID + " reporting itself idle.");
-		idle = true;
 		synchronized(idleThreads){
 			idleThreads.add(this);
 		}
