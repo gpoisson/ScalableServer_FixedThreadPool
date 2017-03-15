@@ -58,7 +58,7 @@ public class ClientComms {
 			
 			statTracker.incrementHashes();
 
-			System.out.println(" Client has new message. Hash: " + sha + " added to hash code queue.");
+			if (debug) System.out.println(" Client has new message. Hash: " + sha + " added to hash code queue.");
 			
 			hashCodes.add(sha);
 
@@ -89,7 +89,7 @@ public class ClientComms {
 				receivedSHA += (char) buffer.get();
 			}
 			
-			if (debug) System.out.println("Client received hash code: " + receivedSHA.length() + " chars.\tVerified: " + verifyReceivedHash(receivedSHA));
+			System.out.println("Client received hash code: " + receivedSHA.length() + " chars.\tVerified: " + verifyReceivedHash(receivedSHA));
 			
 			buffer = null;
 

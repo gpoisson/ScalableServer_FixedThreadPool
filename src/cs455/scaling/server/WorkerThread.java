@@ -115,7 +115,7 @@ public class WorkerThread implements Runnable {
 		HashComputer hashComp = new HashComputer();
 		byte[] data = ((ComputeHashTask) currentTask).getBytes();
 		String hashCode = hashComp.SHA1FromBytes(data);
-		System.out.println("Hashed " + data.length + " bytes: " + hashCode);
+		if (debug) System.out.println("Hashed " + data.length + " bytes: " + hashCode);
 		currentTask.getKey().attach(null);
 		ReplyToClientTask replyTask = new ReplyToClientTask(currentTask.getKey(), hashCode);
 		currentTask = null;
