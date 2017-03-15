@@ -90,7 +90,6 @@ public class WorkerThread implements Runnable {
 			//System.out.println(buffer.position() + " A");
 			while(buffer.hasRemaining() && read != -1){
 				read = socketChannel.read(buffer);
-				System.out.println(buffer.position() + " C");
 			}
 			//System.out.println(buffer.position() + " B");
 			statTracker.incrementReads();
@@ -98,7 +97,7 @@ public class WorkerThread implements Runnable {
 			
 			buffer.rewind();
 			int byteCount = 0;
-			for (int i = 0; i < read; i++){
+			for (int i = 0; i < 8192; i++){
 				data[i] = buffer.get();
 				byteCount++;
 			}
