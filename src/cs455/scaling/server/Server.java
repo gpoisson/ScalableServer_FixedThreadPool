@@ -18,7 +18,7 @@ public class Server implements Node {
 
 	private final int serverPort;					// Port through which clients will connect to server
 	private final int threadPoolSize;				// Fixed size of server thread pool
-	private final ThreadPoolManager tpManager;		// Thread pool manager object
+	private final ThreadPoolManager2 tpManager;		// Thread pool manager object
 	private final Thread tpManagerThread;			// Thread pool manager thread
 	private Selector selector;						// Server selector to monitor open channels
 	private StatTracker statTracker;				// Maintain throughput and connection stats
@@ -28,7 +28,7 @@ public class Server implements Node {
 		this.serverPort = serverPort;
 		this.threadPoolSize = threadPoolSize;
 		this.statTracker = new StatTracker();
-		this.tpManager = new ThreadPoolManager(this.threadPoolSize, this.statTracker, debug);
+		this.tpManager = new ThreadPoolManager2(this.threadPoolSize, this.statTracker, debug);
 		this.tpManagerThread = new Thread(this.tpManager);
 		this.shutDown = false;
 	}
@@ -117,7 +117,8 @@ public class Server implements Node {
 						if (debug) System.out.println(" Channel ready for writing...");
 					}
 				}
-				keys.remove();
+				if (key.attachment() == null)
+					keys.remove();
 			}
 		}
 	}

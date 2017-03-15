@@ -15,7 +15,7 @@ public class Client implements Node {
 	private HashComputer hashComputer;				// Takes a byte array as input and returns an integer hash value using the SHA1 algorithm
 	private LinkedList<String> hashCodes;			// A queue of hash codes for messages sent by the client
 	
-	private ClientComms comm;						// Client communications thread
+	private ClientComms2 comm;						// Client communications thread
 	
 	private Client () {
 		hashComputer = new HashComputer();
@@ -40,7 +40,7 @@ public class Client implements Node {
 		System.out.println("New client initialized.  Server host: " + client.serverHost + " \tServer Port: " + client.serverPort + "\tMessageRate: " + client.messageRate + " per second");
 	
 		// Create a ClientComms object and begin communicating with the server
-		client.comm = new ClientComms(client.serverHost, client.serverPort, client.messageRate, client.hashComputer, client.hashCodes, debug);
+		client.comm = new ClientComms2(client.serverHost, client.serverPort, client.messageRate, client.hashComputer, client.hashCodes, debug);
 		client.comm.startClient();
 	}
 	

@@ -14,7 +14,7 @@ public class HashComputer {
 			byte[] hash = digest.digest(data);
 			BigInteger hashInt = new BigInteger(1, hash);
 			
-			return hashInt.toString();
+			return String.format("%40s", hashInt.toString(16)).replaceAll(" ", "0");
 		} catch (NoSuchAlgorithmException e) {
 			System.out.println(e);
 		}
