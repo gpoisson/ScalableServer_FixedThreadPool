@@ -139,7 +139,7 @@ public class Server implements Node {
 	}
 	
 	private void checkComm(SelectionKey key){
-		synchronized(statTracker){
+		//synchronized(statTracker){
 			if (key.attachment() != null){
 				try{
 					if (System.nanoTime() - (long) key.attachment() > 2000000000L){
@@ -152,7 +152,7 @@ public class Server implements Node {
 				
 				}
 			}
-		}
+		//}
 	}
 
 }
