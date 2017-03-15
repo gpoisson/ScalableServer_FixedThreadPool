@@ -85,8 +85,9 @@ public class WorkerThread implements Runnable {
 		SocketChannel socketChannel = (SocketChannel) key.channel();
 		int read = 0;
 		try{
-			while(buffer.position() < 8192 && read != -1){
+			while(buffer.hasRemaining() && read != -1){
 				read = socketChannel.read(buffer);
+				Thread.sleep(3);
 			}
 			statTracker.incrementReads();
 			if (debug) System.out.println(" Worker thread " + workerThreadID + " has received " + read + " bytes of data.");
@@ -102,6 +103,9 @@ public class WorkerThread implements Runnable {
 		} catch (NegativeArraySizeException e) {
 			statTracker.decrementConnections();
 			currentTask = null;
+		} catch (InterruptedException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
 		}
 	}
 	
