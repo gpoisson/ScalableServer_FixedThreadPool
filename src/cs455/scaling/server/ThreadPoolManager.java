@@ -63,7 +63,9 @@ public class ThreadPoolManager implements Runnable {
 		if (System.nanoTime() - start >= (5000000000L)) {
 			if (print) System.out.println("TPM has " + idleThreads.size() + " idle threads, " + taskQueue.size() + " pending tasks.");
 			start = System.nanoTime();
-			statTracker.resetRW();
+			synchronized(statTracker){
+				statTracker.resetRW();
+			}
 		}
 		return start;
 	}

@@ -70,7 +70,9 @@ public class WorkerThread implements Runnable {
 					System.out.println(e);
 				} finally {
 					key.attach(null);
-					statTracker.incrementReads();
+					synchronized(statTracker) {
+						statTracker.incrementReads();
+					}
 				}
 			}
 			else if (currentTask instanceof ComputeHashTask){
@@ -87,7 +89,9 @@ public class WorkerThread implements Runnable {
 					System.out.println(e);
 				} finally {
 					key.attach(null);
-					statTracker.incrementWrites();
+					synchronized(statTracker) {
+						statTracker.incrementWrites();
+					}
 				}
 			}
 		}
@@ -119,7 +123,9 @@ public class WorkerThread implements Runnable {
 			currentTask = null;
 			return hashTask;
 		} catch (NegativeArraySizeException e) {
-			statTracker.decrementConnections();
+			synchronized(statTracker){
+				statTracker.decrementConnections();
+			}
 			currentTask = null;
 		}
 		return null;
@@ -156,7 +162,9 @@ public class WorkerThread implements Runnable {
 			String replymsg = (String) ((ReplyToClientTask) currentTask).getReplyHash();
 			key.attach(replymsg);
 		} catch (NegativeArraySizeException e) {
-			statTracker.decrementConnections();
+			synchronized(statTracker){
+				statTracker.decrementConnections();
+			}
 			currentTask = null;
 		}
 		currentTask = null;
