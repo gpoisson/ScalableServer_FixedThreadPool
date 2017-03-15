@@ -142,7 +142,7 @@ public class Server implements Node {
 			if (key.attachment() != null){
 				try{
 					if (System.nanoTime() - (long) key.attachment() > 1000000000L){
-						System.out.println("Hang detected");
+						if (debug) System.out.println("Hang detected");
 						key.attach(null);
 					}
 				} catch (Exception e) {	
