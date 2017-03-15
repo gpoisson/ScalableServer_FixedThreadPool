@@ -15,6 +15,8 @@ public class ThreadPoolManager implements Runnable {
 	private LinkedList<Task> taskQueue;
 	private LinkedList<WorkerThread> idleThreads;
 	private boolean shutDown;
+	public int idleThreadCount;
+	public int pendingTaskCount;
 	
 	public ThreadPoolManager(int threadPoolSize, StatTracker statTracker, boolean debug) {
 		this.threadPoolSize = threadPoolSize;
@@ -25,6 +27,8 @@ public class ThreadPoolManager implements Runnable {
 		this.taskQueue = new LinkedList<Task>();
 		this.idleThreads = new LinkedList<WorkerThread>();
 		this.shutDown = false;
+		this.idleThreadCount = 0;
+		this.pendingTaskCount = 0;
 	}
 
 	@Override
@@ -38,6 +42,8 @@ public class ThreadPoolManager implements Runnable {
 			
 			synchronized(taskQueue){
 				synchronized(idleThreads){
+					idleThreadCount = idleThreads.size();
+					pendingTaskCount = taskQueue.size();
 					if (taskQueue.size() > 0 && idleThreads.size() > 0) {
 						if (debug) System.out.println("Matching pending task to idle thread...");
 						WorkerThread taskedWorker = idleThreads.removeFirst();
