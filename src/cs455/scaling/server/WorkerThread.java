@@ -102,7 +102,7 @@ public class WorkerThread implements Runnable {
 				byteCount++;
 			}
 			
-			System.out.println(byteCount + " total bytes read from client.");
+			if (debug) System.out.println(byteCount + " total bytes read from client.");
 			currentTask = new ComputeHashTask(key,data);
 		} catch (NegativeArraySizeException e) {
 			statTracker.decrementConnections();
