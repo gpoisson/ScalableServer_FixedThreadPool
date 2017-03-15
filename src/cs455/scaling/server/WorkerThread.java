@@ -87,7 +87,7 @@ public class WorkerThread implements Runnable {
 		try{
 			while(buffer.hasRemaining() && read != -1){
 				read = socketChannel.read(buffer);
-				System.out.println(buffer.limit());
+				System.out.println(buffer.position());
 			}
 			statTracker.incrementReads();
 			if (debug) System.out.println(" Worker thread " + workerThreadID + " has received " + read + " bytes of data.");
