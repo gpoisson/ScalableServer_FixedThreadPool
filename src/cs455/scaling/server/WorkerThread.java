@@ -56,7 +56,10 @@ public class WorkerThread implements Runnable {
 		synchronized (currentTask){
 			if (currentTask instanceof AcceptIncomingTrafficTask){
 				try {
-					read();
+					ComputeHashTask hashTask = read();
+					synchronized(taskQueue){
+						taskQueue.add(hashTask);
+					}
 				} catch (IOException e) {
 					System.out.println(e);
 				}
@@ -77,7 +80,7 @@ public class WorkerThread implements Runnable {
 		}
 	}
 	
-	private void read() throws IOException{
+	private ComputeHashTask read() throws IOException{
 		if (debug) System.out.println("  READ TASK");
 		ByteBuffer buffer = ByteBuffer.allocate(8192);
 		SelectionKey key = currentTask.getKey();
@@ -104,12 +107,13 @@ public class WorkerThread implements Runnable {
 			
 			if (debug) System.out.println(byteCount + " total bytes read from client.");
 			ComputeHashTask hashTask = new ComputeHashTask(key,data);
-			taskQueue.add(hashTask);
 			currentTask = null;
+			return hashTask;
 		} catch (NegativeArraySizeException e) {
 			statTracker.decrementConnections();
 			currentTask = null;
 		}
+		return null;
 	}
 	
 	private ReplyToClientTask computeHash(){
