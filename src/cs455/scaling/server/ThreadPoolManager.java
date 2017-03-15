@@ -36,13 +36,17 @@ public class ThreadPoolManager implements Runnable {
 		while (!shutDown) {
 			start = printTPMdebug(start, debug);
 			
-			if (taskQueue.size() > 0 && idleThreads.size() > 0) {
-				if (debug) System.out.println("Matching pending task to idle thread...");
-				WorkerThread taskedWorker = idleThreads.removeFirst();
-				Task nextTask = taskQueue.removeFirst();
-				taskedWorker.assignTask(nextTask);
-				synchronized(taskedWorker){
-					taskedWorker.notify();
+			synchronized(taskQueue){
+				synchronized(idleThreads){
+					if (taskQueue.size() > 0 && idleThreads.size() > 0) {
+						if (debug) System.out.println("Matching pending task to idle thread...");
+						WorkerThread taskedWorker = idleThreads.removeFirst();
+						Task nextTask = taskQueue.removeFirst();
+						taskedWorker.assignTask(nextTask);
+						synchronized(taskedWorker){
+							taskedWorker.notify();
+						}
+					}
 				}
 			}
 		}
