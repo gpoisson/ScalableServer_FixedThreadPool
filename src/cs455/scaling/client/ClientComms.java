@@ -89,7 +89,8 @@ public class ClientComms {
 				receivedSHA += (char) buffer.get();
 			}
 			
-			if (debug) System.out.println("Client received hash code: " + receivedSHA.length() + " chars.\tVerified: " + verifyReceivedHash(receivedSHA));
+			boolean verified = verifyReceivedHash(receivedSHA);
+			if (debug) System.out.println("Client received hash code: " + receivedSHA.length() + " chars.\tVerified: " + verified);
 			
 			buffer = null;
 
