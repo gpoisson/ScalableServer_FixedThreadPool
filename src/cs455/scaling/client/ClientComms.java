@@ -32,11 +32,11 @@ public class ClientComms {
 		this.hashComputer = hashComputer;
 		this.hashCodes = hashCodes;
 		this.statTracker = new StatTracker();
-		this.debug = true;
+		this.debug = debug;
 	}
 		
 	public void startClient() throws IOException {
-		if (debug) System.out.println("NIOClientComms starting the client...");
+		if (debug) System.out.println("ClientComms starting the client...");
 		long start = System.nanoTime();
 
 		// Configure socket channel for connection to server
@@ -64,60 +64,36 @@ public class ClientComms {
 			hashCodes.add(sha);
 
 			// Load message payload into buffer
-			buffer = ByteBuffer.allocate(hashMessage.getPayload().length);
-			buffer.rewind();
+			ByteBuffer buffer = ByteBuffer.allocate(hashMessage.getPayload().length);
 			buffer.put(hashMessage.getPayload());
 			buffer.rewind();
 			
 			// Write message to socket channel
-			if (debug) System.out.println(" Writing from buffer to socket channel...");
 			int read = 0;
-			while(buffer.hasRemaining() && read != -1) {
+			while (buffer.hasRemaining() && read != -1){
 				read = socketChannel.write(buffer);
 			}
 			statTracker.incrementWrites();
-			if (debug) System.out.println(" " + read + " bytes written. Clearing buffer.");
+			
 			buffer.clear();
+			buffer = ByteBuffer.allocate(40);
 			
-			// Read response hash message from server
-			buffer.flip();
-			buffer.rewind();
-			//buffer = ByteBuffer.allocate(40);
-			if (debug) System.out.println(" Reading from socket channel to buffer...");
-			while (buffer.hasRemaining() && read != -1){
-				read = socketChannel.read(buffer);
-				//System.out.print(buffer.get());
-			}
+			// Read server response
+			read = 0;
+			read = socketChannel.read(buffer);
 			statTracker.incrementReads();
-			if (debug) System.out.println("...Data read from channel.  read: " + read + " bytes.");
+			
 			buffer.rewind();
 			
-			// Store response in byte array
-			byte[] receiveHash = new byte[read]; 
-			for (int i = 0; i < read; i++){
-				try{
-					receiveHash[i] = buffer.get();
-				} catch(Exception e){
-					continue;
-				}
+			// Verify server response
+			String receivedSHA = new String();
+			while (buffer.hasRemaining()){
+				receivedSHA += (char) buffer.get();
 			}
-			String receivedHashString = new String();
-			for (byte b: receiveHash){
-				receivedHashString += (char) b;
-			}
-
-			// Remove unneeded data
-			receiveHash = null;
+			
+			if (debug) System.out.println("Client received hash code: " + receivedSHA.length() + " chars.\tVerified: " + verifyReceivedHash(receivedSHA));
+			
 			buffer = null;
-	
-			// Verify received hash against hash code in hash queue
-			if (debug) System.out.println(" Client received msg from server: " + receivedHashString);
-			if(verifyReceivedHash(receivedHashString)){
-				if (debug) System.out.println(" Client verified received hash!");
-			}
-			else{
-				if (debug) System.out.println(" Client failed to verify received hash.");
-			}
 
 			// Sleep until time to send next message
 			long waitTime = (long) (1000.0/messageRate);
@@ -136,8 +112,8 @@ public class ClientComms {
 		receivedHash = receivedHash.trim();
 		if (receivedHash.equals(nextExpectedHash)) return true;
 		else {
-			if (debug) System.out.println(" Expected hash: " + nextExpectedHash);
-			if (debug) System.out.println(" Received hash: " + receivedHash);
+			System.out.println(" Expected hash: " + nextExpectedHash);
+			System.out.println(" Received hash: " + receivedHash);
 			return false;
 		}
 	}
