@@ -32,7 +32,6 @@ public class WorkerThread implements Runnable {
 		this.sleepLock = new Object();
 		this.currentTask = null;
 		this.taskQueue = taskQueue;
-		//System.out.println("Worker Thread " + id + " constructed.");
 	}
 
 	@Override
@@ -54,6 +53,7 @@ public class WorkerThread implements Runnable {
 	private void performTask(){
 		if (debug) System.out.println(" Worker thread " + workerThreadID + " performing task...");
 		synchronized (currentTask){
+			SelectionKey key = currentTask.getKey();
 			if (currentTask instanceof AcceptIncomingTrafficTask){
 				try {
 					ComputeHashTask hashTask = read();
@@ -63,12 +63,14 @@ public class WorkerThread implements Runnable {
 				} catch (IOException e) {
 					System.out.println(e);
 				}
+				key.attach(null);
 			}
 			else if (currentTask instanceof ComputeHashTask){
 				ReplyToClientTask newReplyTask = computeHash();
 				synchronized(taskQueue){
 					taskQueue.add(newReplyTask);
 				}
+				key.attach(null);
 			}
 			else if (currentTask instanceof ReplyToClientTask){
 				try {
@@ -76,6 +78,7 @@ public class WorkerThread implements Runnable {
 				} catch (IOException e) {
 					System.out.println(e);
 				}
+				key.attach(null);
 			}
 		}
 	}
@@ -84,17 +87,14 @@ public class WorkerThread implements Runnable {
 		if (debug) System.out.println("  READ TASK");
 		ByteBuffer buffer = ByteBuffer.allocate(8192);
 		SelectionKey key = currentTask.getKey();
-		//System.out.println(key);
+		key.attach(buffer);
 		SocketChannel socketChannel = (SocketChannel) key.channel();
 		int read = 0;
 		try{
 			byte[] data = new byte[8192];
-			//int i = 0;
-			//System.out.println(buffer.position() + " A");
 			while(buffer.hasRemaining() && read != -1){
 				read = socketChannel.read(buffer);
 			}
-			//System.out.println(buffer.position() + " B");
 			statTracker.incrementReads();
 			if (debug) System.out.println(" Worker thread " + workerThreadID + " has received " + read + " bytes of data.");
 			
@@ -120,9 +120,9 @@ public class WorkerThread implements Runnable {
 		if (debug) System.out.println("  COMPUTE HASH");
 		HashComputer hashComp = new HashComputer();
 		byte[] data = ((ComputeHashTask) currentTask).getBytes();
+		currentTask.getKey().attach(data);
 		String hashCode = hashComp.SHA1FromBytes(data);
 		if (debug) System.out.println("Hashed " + data.length + " bytes: " + hashCode);
-		currentTask.getKey().attach(null);
 		ReplyToClientTask replyTask = new ReplyToClientTask(currentTask.getKey(), hashCode);
 		currentTask = null;
 		return replyTask;
@@ -134,7 +134,6 @@ public class WorkerThread implements Runnable {
 		if (debug) System.out.println("  Replying with hash: " + ((ReplyToClientTask) currentTask).getReplyHash());
 		SelectionKey key = currentTask.getKey();
 		key.attach(buffer);
-		//System.out.println(key);
 		byte[] data = new byte[40];
 		data = ((ReplyToClientTask) currentTask).getReplyHash().getBytes();
 		buffer.put(data);
@@ -151,7 +150,6 @@ public class WorkerThread implements Runnable {
 			currentTask = null;
 		}
 		statTracker.incrementWrites();
-		key.attach(null);
 		currentTask = null;
 	}
 	
