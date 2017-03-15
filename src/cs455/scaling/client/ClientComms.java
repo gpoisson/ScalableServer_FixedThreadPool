@@ -80,7 +80,6 @@ public class ClientComms {
 			// Read server response
 			read = 0;
 			read = socketChannel.read(buffer);
-			statTracker.incrementReads();
 			
 			buffer.rewind();
 			
@@ -109,7 +108,10 @@ public class ClientComms {
 	private boolean verifyReceivedHash(String receivedHash) {
 		String nextExpectedHash = ((String) hashCodes.removeFirst()).trim();
 		receivedHash = receivedHash.trim();
-		if (receivedHash.equals(nextExpectedHash)) return true;
+		if (receivedHash.equals(nextExpectedHash)) {
+			statTracker.incrementReads();
+			return true;
+		}
 		else {
 			System.out.println(" Expected hash: " + nextExpectedHash);
 			System.out.println(" Received hash: " + receivedHash);
