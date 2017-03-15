@@ -7,6 +7,7 @@ public class StatTracker {
 	private int writes;
 	private int hashes;
 	private int connections;
+	private long time;
 	
 	public StatTracker() {
 		reads = 0;
@@ -34,6 +35,14 @@ public class StatTracker {
 	public void resetRW() {
 		reads = 0;
 		writes = 0;
+	}
+	
+	public void setTime(long time){
+		this.time = time;
+	}
+	
+	public long getTime(){
+		return this.time;
 	}
 	
 	public void decrementConnections() {

@@ -45,6 +45,9 @@ public class WorkerThread implements Runnable {
 			else {
 				if (debug) System.out.println("  Worker thread " + workerThreadID + " has a new task");
 				performTask();
+				synchronized(statTracker){
+					statTracker.setTime(System.nanoTime());
+				}
 			}
 		}
 		
@@ -87,7 +90,7 @@ public class WorkerThread implements Runnable {
 		if (debug) System.out.println("  READ TASK");
 		ByteBuffer buffer = ByteBuffer.allocate(8192);
 		SelectionKey key = currentTask.getKey();
-		key.attach(buffer);
+		key.attach(System.nanoTime());
 		SocketChannel socketChannel = (SocketChannel) key.channel();
 		int read = 0;
 		try{
@@ -120,7 +123,7 @@ public class WorkerThread implements Runnable {
 		if (debug) System.out.println("  COMPUTE HASH");
 		HashComputer hashComp = new HashComputer();
 		byte[] data = ((ComputeHashTask) currentTask).getBytes();
-		currentTask.getKey().attach(data);
+		currentTask.getKey().attach(System.nanoTime());
 		String hashCode = hashComp.SHA1FromBytes(data);
 		if (debug) System.out.println("Hashed " + data.length + " bytes: " + hashCode);
 		ReplyToClientTask replyTask = new ReplyToClientTask(currentTask.getKey(), hashCode);
@@ -133,7 +136,7 @@ public class WorkerThread implements Runnable {
 		ByteBuffer buffer = ByteBuffer.allocate(40);
 		if (debug) System.out.println("  Replying with hash: " + ((ReplyToClientTask) currentTask).getReplyHash());
 		SelectionKey key = currentTask.getKey();
-		key.attach(buffer);
+		key.attach(System.nanoTime());
 		byte[] data = new byte[40];
 		data = ((ReplyToClientTask) currentTask).getReplyHash().getBytes();
 		buffer.put(data);

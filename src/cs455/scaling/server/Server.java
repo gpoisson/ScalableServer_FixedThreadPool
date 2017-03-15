@@ -74,47 +74,42 @@ public class Server implements Node {
 				server.statTracker.resetRW();
 			}
 			
-			if (debug) System.out.println(" Server selector waiting for new incoming connections...");
+			//if (debug) System.out.println(" Server selector waiting for new incoming connections...");
 			
 			server.selector.select();
 			
-			if (debug) System.out.println(" Server selector connected...");
+			//if (debug) System.out.println(" Server selector connected...");
 
 			Iterator<SelectionKey> keys = server.selector.selectedKeys().iterator();
 			
-			if (debug) System.out.println(" Server selector has new keys...");
+			//if (debug) System.out.println(" Server selector has new keys...");
 			
 			while (keys.hasNext()) {
-				// In debug mode, server runs very slowly so that debug statements can be read in a useful way
-				if (debug) {
-					int waitTime = 1000;
-					try {
-						Thread.sleep(waitTime);
-					} catch (InterruptedException e) {
-						System.out.println(e);
-					}
-				}
+				
 				// Iterate through available keys to check for incoming data
 				SelectionKey key = (SelectionKey) keys.next();
 				if (key.isAcceptable()) {
-					if (debug) System.out.println(" Connection accepted by server socket channel...");
+					//if (debug) System.out.println(" Connection accepted by server socket channel...");
 					server.accept(key);
 					server.statTracker.incrementConnections();
 				}
 				if (key.isReadable()){
-					if (debug) System.out.println(" Key readable...");
+					//if (debug) System.out.println(" Key readable...");
 					if (key.attachment() == null) {
-						if (debug) System.out.println(" Channel ready for reading...");
+						//if (debug) System.out.println(" Channel ready for reading...");
 						AcceptIncomingTrafficTask readTask = new AcceptIncomingTrafficTask(key);
-						if (debug) System.out.println(" Passing new read task to thread pool manager...");
+						//if (debug) System.out.println(" Passing new read task to thread pool manager...");
 						server.tpManager.enqueueTask(readTask);
-						key.attach("temp");
+						key.attach(System.nanoTime());
 					}
 				}
 				if (key.isWritable()) {
-					if (debug) System.out.println(" Key writable...");
+					//if (debug) System.out.println(" Key writable...");
+					synchronized(server.statTracker){
+						server.checkComm(key);
+					}
 					if (key.attachment() == null) {
-						if (debug) System.out.println(" Channel ready for writing...");
+						//if (debug) System.out.println(" Channel ready for writing...");
 					}
 				}
 				if (key.attachment() == null)
@@ -140,6 +135,21 @@ public class Server implements Node {
 	// Print usage message if incorrect number of arguments are given
 	private static String usage() {
 		return "Usage:  Server <portnum> <thread-pool-size>";
+	}
+	
+	private void checkComm(SelectionKey key){
+		synchronized(key){
+			if (key.attachment() != null){
+				try{
+					if (System.nanoTime() - (long) key.attachment() > 1000000000L){
+						System.out.println("Hang detected");
+						key.attach(null);
+					}
+				} catch (Exception e) {	
+				
+				}
+			}
+		}
 	}
 
 }
