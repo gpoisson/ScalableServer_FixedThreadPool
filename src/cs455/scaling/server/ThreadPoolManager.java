@@ -21,7 +21,7 @@ public class ThreadPoolManager implements Runnable {
 	public ThreadPoolManager(int threadPoolSize, StatTracker statTracker, boolean debug) {
 		this.threadPoolSize = threadPoolSize;
 		this.statTracker = statTracker;
-		this.debug = true;
+		this.debug = false;
 		this.threadPool = new WorkerThread[threadPoolSize];
 		this.threadPoolThreads = new Thread[threadPoolSize];
 		this.taskQueue = new LinkedList<Task>();
