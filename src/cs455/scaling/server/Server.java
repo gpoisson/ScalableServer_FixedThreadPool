@@ -141,7 +141,7 @@ public class Server implements Node {
 		synchronized(key){
 			if (key.attachment() != null){
 				try{
-					if (System.nanoTime() - (long) key.attachment() > 1000000000L){
+					if (System.nanoTime() - (long) key.attachment() > 4000000000L){
 						if (debug) System.out.println("Hang detected");
 						key.attach(null);
 					}
