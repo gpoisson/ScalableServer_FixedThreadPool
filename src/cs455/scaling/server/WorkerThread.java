@@ -88,6 +88,7 @@ public class WorkerThread implements Runnable {
 			while(buffer.hasRemaining() && read != -1){
 				read = socketChannel.read(buffer);
 			}
+			System.out.println(buffer.limit() + " total bytes read from client.");
 			statTracker.incrementReads();
 			if (debug) System.out.println(" Worker thread " + workerThreadID + " has received " + read + " bytes of data.");
 			byte[] data = new byte[read];
@@ -98,6 +99,7 @@ public class WorkerThread implements Runnable {
 			currentTask = new ComputeHashTask(key,data);
 		} catch (NegativeArraySizeException e) {
 			statTracker.decrementConnections();
+			currentTask = null;
 		}
 	}
 	
@@ -132,6 +134,7 @@ public class WorkerThread implements Runnable {
 			}
 		} catch (NegativeArraySizeException e) {
 			statTracker.decrementConnections();
+			currentTask = null;
 		}
 		statTracker.incrementWrites();
 		key.attach(null);
