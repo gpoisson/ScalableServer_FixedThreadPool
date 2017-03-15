@@ -88,8 +88,9 @@ public class WorkerThread implements Runnable {
 			byte[] data = new byte[8192];
 			//int i = 0;
 			//System.out.println(buffer.position() + " A");
-			while(buffer.hasRemaining() && buffer.position() < 8192 && read != -1){
+			while(buffer.hasRemaining() && read != -1){
 				read = socketChannel.read(buffer);
+				System.out.println(buffer.position() + " C");
 			}
 			//System.out.println(buffer.position() + " B");
 			statTracker.incrementReads();
