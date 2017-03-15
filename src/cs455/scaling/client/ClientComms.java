@@ -58,7 +58,7 @@ public class ClientComms {
 			
 			statTracker.incrementHashes();
 
-			if (debug) System.out.println(" Client has new message. Hash: " + sha + " added to hash code queue.");
+			System.out.println(" Client has new message. Hash: " + sha + " added to hash code queue.");
 			
 			hashCodes.add(sha);
 
