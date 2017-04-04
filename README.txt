@@ -1,12 +1,9 @@
-# cs455_pa2
 ################################
-PROGRAMMING ASSIGNMENT 2
-CS455
+SCALABLE JAVA NIO SERVER - FIXED THREAD POOL
 AUTHOR: GREGORY POISSON
 ################################
 
 DATA STRUCTURES
-	For this assignment, I implemented a few data structures to simplify the design. They are as follows:
 	
 	HASH MESSAGE
 		This is the 8KB message passed from the client to the server. Despite the name, it isn't actually hashed,
@@ -49,11 +46,3 @@ DATA STRUCTURES
 		used by the clients to track their own throughput
 		
 		
-From my tests, everything runs the way it ought to with 100 clients sending 4 messages per second. If I try to scale 
-up to 200 clients, the server starts to choke on the amount of traffic.
-
-If any issues are encountered while grading, feel free to contact me:  gpoisson@rams.colostate.edu
-
-Thanks,
-
-Greg Poisson
